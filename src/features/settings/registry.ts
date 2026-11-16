@@ -92,7 +92,7 @@ export const sections = [
         key: "showDiff",
         label: "显示代码差异面板",
         type: "toggle",
-        default: true,
+        default: false,
       },
       {
         key: "codeTheme",

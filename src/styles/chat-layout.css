@@ -1,10 +1,10 @@
 .conversation { --chat-width: 760px; }
-.conversation .messages { width: 100%; max-width: var(--chat-width); padding: 28px 24px 20px; }
+.conversation .messages { width: 100%; max-width: var(--chat-width); padding: 28px 12px 20px; }
 .conversation .composer-zone { max-width: var(--chat-width); padding: 8px 12px 16px; }
 .message-scroll { scrollbar-gutter: stable both-edges; }
 .main-content.has-workspace .page-column { flex: 1; }
 .main-content.has-workspace .workspace { flex-shrink: 0; }
-.main-content.has-workspace .messages { padding: 24px 24px 18px; }
+.main-content.has-workspace .messages { padding: 24px 12px 18px; }
 .main-content.has-workspace .message.user { padding-left: 26%; }
 .message.user { margin-bottom: 42px; }
 .message.user > .message-content { max-width: 100%; padding: 8px 12px; border-radius: 16px; }
@@ -55,7 +55,7 @@
 .scroll-bottom { bottom: 155px; width: 34px; height: 34px; left: calc(50% - 17px); box-shadow: 0 2px 8px #00000008; }
 @keyframes process-reveal { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 1250px) {
-  .main-content.has-workspace .messages { padding-left: 20px; padding-right: 20px; }
+  .main-content.has-workspace .messages { padding-left: 12px; padding-right: 12px; }
   .main-content.has-workspace .message.user { padding-left: 14%; }
   .new-chat-input { width: min(736px, calc(100% - 24px)); }
 }

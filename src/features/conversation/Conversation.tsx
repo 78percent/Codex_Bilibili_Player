@@ -27,7 +27,8 @@ export function Conversation() {
   const [showDown, setShowDown] = useState(false);
   const messages = state.page === "home" ? [] : thread?.messages || [];
   const groups = groupMessages(messages);
-  const empty = !messages.length;
+  const ownsVideo = state.page === 'thread' && thread?.id === player.ownerThread && !!player.video;
+  const empty = !messages.length && !ownsVideo;
   useEffect(() => {
     nearBottom.current = true;
     setShowDown(false);
@@ -36,6 +37,9 @@ export function Conversation() {
   useEffect(() => {
     if (nearBottom.current) scroll.current?.scrollTo({ top: scroll.current.scrollHeight });
   }, [messages]);
+  useEffect(() => {
+    if (ownsVideo) scroll.current?.querySelector('.bili-chat-card')?.scrollIntoView({ block: 'nearest' });
+  }, [ownsVideo, player.video?.bvid]);
   return <section className={`conversation ${empty ? "empty-conversation" : ""}`}>
     <div className="message-scroll" ref={scroll} onScroll={e => {
       const el = e.currentTarget;
@@ -43,6 +47,7 @@ export function Conversation() {
       setShowDown(!nearBottom.current);
     }}>
       {empty ? <NewChatHero /> : <div className="messages">
+        {!messages.length && ownsVideo && <ChatVideoCard />}
         {groups.map((group, i) => <Fragment key={group.messages[0].id}>
           {group.role === "user" ? <UserMessage message={group.messages[0]} threadId={thread!.id} />
           : thread && <AssistantTurn messages={group.messages} thread={thread} active={i === groups.length - 1 && state.runs.some(run => run.threadId === thread.id)} />}

@@ -18,7 +18,7 @@ function ReasoningSlider({ effort, onChange }: {
   const level = Math.max(0, efforts.indexOf(effort));
   return (
     <div className={`reasoning-slider ${level === 4 ? "is-ultra" : ""}`}>
-      <div className="reasoning-slider-progress" style={{ width: `calc(${level * 25}% + ${36 - level * 9}px)` }} aria-hidden="true">
+      <div className="reasoning-slider-progress" style={{ width: `calc(${level * 25}% + var(--reasoning-thumb-size) * ${1 - level / 4})` }} aria-hidden="true">
         <div className="reasoning-slider-fill">
           <div className="reasoning-starfield">
             {stars.map(([left, top, duration, delay, travel], index) => (

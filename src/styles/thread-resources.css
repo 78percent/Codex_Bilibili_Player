@@ -3,16 +3,16 @@
 .chat-titlebar { border-bottom-color: transparent; }
 .thread-title-menu { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 5px 2px; border-radius: 6px; color: var(--text); }
 .thread-title-menu:hover { background: var(--surface-secondary); }
-.thread-title-menu .window-title { font-size: 13px; font-weight: 500; }
+.thread-title-menu .window-title { font-size: 13px; font-weight: 500; color: color-mix(in srgb, var(--text) 90%, var(--surface)); }
 .thread-title-menu > svg { flex-shrink: 0; }
 .titlebar-left { min-width: 0; }
 .titlebar-left > .menu-trigger { min-width: 0; max-width: 100%; }
 .titlebar-actions { flex-shrink: 0; color: var(--text); gap: 6px; }
 .titlebar-actions .icon-button { width: 28px; height: 28px; border-radius: 9px; }
 .titlebar-actions .is-active { background: var(--surface-secondary); }
-.thread-resources { position: absolute; z-index: 35; top: 59px; right: 8px; width: 300px; max-width: calc(100% - 16px); max-height: calc(100% - 75px); overflow: auto; padding: 12px 20px; border: 1px solid var(--border-strong); border-radius: 18px; background: var(--surface); box-shadow: 0 4px 16px #0000000a, 0 1px 4px #00000004; font-size: 13px; }
-.thread-resources section + section { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
-.thread-resources header { display: flex; align-items: center; justify-content: space-between; min-height: 28px; margin-bottom: 5px; color: var(--text-secondary); }
+.thread-resources { position: absolute; z-index: 35; top: 59px; right: 8px; width: 300px; max-width: calc(100% - 16px); max-height: calc(100% - 75px); overflow: auto; padding: 10px 20px; border: 1px solid var(--border-strong); border-radius: 18px; background: var(--surface); box-shadow: 0 4px 16px #0000000a, 0 1px 4px #00000004; font-size: 13px; }
+.thread-resources section + section { margin-top: 9px; padding-top: 10px; border-top: 1px solid var(--border); }
+.thread-resources header { display: flex; align-items: center; justify-content: space-between; min-height: 24px; margin-bottom: 2px; color: var(--text-secondary); }
 .thread-resources header .icon-button { width: 22px; height: 22px; color: var(--text-tertiary); }
 .resource-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 30px; padding: 5px 2px; text-align: left; border-radius: 6px; color: var(--text); }
 .resource-row:hover:not(:disabled) { background: var(--surface-secondary); }
@@ -20,6 +20,15 @@
 .resource-row > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .resource-row > img { width: 18px; height: 18px; flex-shrink: 0; object-fit: contain; border: 1px solid var(--border); border-radius: 3px; }
 .source-row { color: var(--text-secondary); }
+.subagent-summary-row { gap: 8px; color: var(--text-secondary); }
+.subagent-symbols { display: flex; align-items: center; gap: 6px; }
+.subagent-symbol.rose { color: #f58b97; }
+.subagent-symbol.blue { color: #78aef2; }
+.subagent-symbol.cyan { color: #8bcbd5; }
+.subagent-detail { display: flex; align-items: flex-start; gap: 8px; padding: 8px 2px; }
+.subagent-detail > div { flex: 1; min-width: 0; }
+.subagent-detail p { margin-top: 3px; color: var(--text-secondary); font-size: 12px; line-height: 18px; }
+.subagent-detail small { white-space: nowrap; font-size: 11px; }
 .source-row:disabled { opacity: 1; cursor: default; }
 .resource-more { color: var(--text-tertiary); margin-top: 4px; }
 .resource-empty { color: var(--text-tertiary); padding: 6px 2px; margin: 0; }
@@ -27,6 +36,8 @@
 .resource-preview img { display: block; max-width: 100%; max-height: 60vh; margin: auto; object-fit: contain; }
 .resource-preview a { display: flex; align-items: center; gap: 8px; overflow-wrap: anywhere; }
 .resource-preview pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--code-font-size); }
+.main-shell:has(> .thread-resources) .message-scroll { scrollbar-width: none; }
+.main-shell:has(> .thread-resources) .message-scroll::-webkit-scrollbar { display: none; }
 @container thread-shell (min-width: 1100px) {
-  .has-thread-resources .conversation { margin-right: 320px; }
+  .has-thread-resources .conversation { margin-right: 308px; }
 }

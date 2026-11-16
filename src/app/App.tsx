@@ -15,8 +15,12 @@ import { DesktopBar } from "./DesktopBar";
 import { ActivityRail } from "./ActivityRail";
 import { ResizeHandle } from "../components/ui/SplitPane";
 import { ThreadResources } from "../features/conversation/ResourcePopover";
+import { useVideo } from '../features/video/VideoProvider';
+import { VideoSearchDialog } from '../features/video-search/VideoSearchDialog';
+import { HistoryOverlay } from '../features/history/HistoryOverlay';
 export default function App() {
   const { state, dispatch } = useApp();
+  const player = useVideo();
   useEffect(() => {
     const media = matchMedia("(prefers-color-scheme: dark)");
     const apply = () =>
@@ -65,7 +69,7 @@ export default function App() {
     return () => window.removeEventListener("keydown", key);
   }, [state.sidebarOpen]);
   const page = state.page;
-  const newChat = page === "home" || (page === "thread" && !state.threads.find(t => t.id === state.activeThread)?.messages.length);
+  const newChat = page === "home" || (page === "thread" && !state.threads.find(t => t.id === state.activeThread)?.messages.length && !(player.ownerThread === state.activeThread && player.video));
   const workspaceVisible = state.panelOpen && (newChat ? !!state.settings.homePanelOpen : ["thread", "work"].includes(page));
   let content;
   if (page === "thread" || page === "home") content = <Conversation />;
@@ -118,6 +122,8 @@ export default function App() {
         {page === "thread" && !newChat && state.settings.threadResourcesOpen && <ThreadResources key={state.activeThread} />}
       </div>
       {state.searchOpen && <SearchDialog />}
+      <VideoSearchDialog />
+      <HistoryOverlay />
       </div>
       </div>
       {state.toast && (

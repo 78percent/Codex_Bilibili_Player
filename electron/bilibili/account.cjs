@@ -12,17 +12,21 @@ function createAccount({ session, client, userData, parent, onChange }) {
   const allowed = u => { try { const x = new URL(u); return x.protocol === 'https:' && (x.hostname === 'bilibili.com' || x.hostname.endsWith('.bilibili.com') || x.hostname.endsWith('.geetest.com')); } catch { return false; } };
   const snapshot = () => ({ profile, persistenceError });
   async function save() {
-    if (!safeStorage.isEncryptionAvailable()) { persistenceError = '本机加密不可用，无法记住登录'; return; }
     const current = generation;
-    const cookies = await session.cookies.get({ domain: 'bilibili.com' });
-    const bytes = safeStorage.encryptString(JSON.stringify(cookies));
-    writes = writes.catch(() => {}).then(async () => {
+    try {
+      if (!safeStorage.isEncryptionAvailable()) { persistenceError = '本机加密不可用，无法记住登录'; return; }
+      const cookies = await session.cookies.get({ domain: 'bilibili.com' });
       if (current !== generation) return;
-      await fs.mkdir(userData, { recursive: true });
-      await fs.writeFile(file + '.tmp', bytes);
-      await fs.rename(file + '.tmp', file);
-    });
-    try { await writes; persistenceError = ''; } catch { persistenceError = '登录成功，但本机登录状态未保存'; }
+      const bytes = safeStorage.encryptString(JSON.stringify(cookies));
+      writes = writes.catch(() => {}).then(async () => {
+        if (current !== generation) return;
+        await fs.mkdir(userData, { recursive: true });
+        await fs.writeFile(file + '.tmp', bytes);
+        await fs.rename(file + '.tmp', file);
+      });
+      await writes;
+      if (current === generation) persistenceError = '';
+    } catch { if (current === generation) persistenceError = '登录成功，但本机登录状态未保存'; }
   }
   async function restore() {
     let bytes;
@@ -41,15 +45,23 @@ function createAccount({ session, client, userData, parent, onChange }) {
   }
   async function clear() {
     if (clearing) return clearing;
-    generation++; cancelQR(); profile = null;
+    generation++; cancelQR(); profile = null; persistenceError = '';
     if (loginWindow && !loginWindow.isDestroyed()) loginWindow.destroy();
+    // Stop playback and hide the account even if filesystem cleanup later fails.
+    onChange(snapshot());
     clearing = (async () => {
       await client.reset();
       await writes.catch(() => {});
-      await session.closeAllConnections();
-      await session.clearStorageData();
-      await fs.rm(file, { force: true });
-      persistenceError = ''; onChange(snapshot());
+      const results = await Promise.allSettled([
+        session.closeAllConnections(), session.clearStorageData(),
+        fs.rm(file, { force: true }), fs.rm(file + '.tmp', { force: true }),
+      ]);
+      if (results.some(result => result.status === 'rejected')) {
+        persistenceError = '本机会话未完全清除，请重试退出登录；重启后可能恢复旧登录';
+        onChange(snapshot());
+        throw new BiliError(persistenceError, 'STORAGE');
+      }
+      onChange(snapshot());
     })();
     try { await clearing; } finally { clearing = null; }
   }
@@ -58,7 +70,7 @@ function createAccount({ session, client, userData, parent, onChange }) {
     const current = generation;
     const cookies = await session.cookies.get({ name: 'SESSDATA' });
     if (current !== generation) return snapshot();
-    if (!cookies.length) { profile = null; return snapshot(); }
+    if (!cookies.length) { profile = null; onChange(snapshot()); return snapshot(); }
     let data;
     try { data = await client.nav(); }
     catch (e) { if (e.code === 'EXPIRED' && current === generation) await clear(); throw e; }

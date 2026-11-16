@@ -1,7 +1,7 @@
 # Start the current source in an isolated development window. No build or tests.
 $ErrorActionPreference = 'Stop'
 $projectRoot = $PSScriptRoot
-$runtimePath = Join-Path $projectRoot '.runtime/electron/electron.exe'
+$runtimePath = Join-Path $projectRoot 'node_modules/electron/dist/electron.exe'
 $vitePath = Join-Path $projectRoot 'node_modules/vite/bin/vite.js'
 if (!(Test-Path -LiteralPath $runtimePath) -or !(Test-Path -LiteralPath $vitePath)) {
   throw 'Electron runtime or Vite is missing.'

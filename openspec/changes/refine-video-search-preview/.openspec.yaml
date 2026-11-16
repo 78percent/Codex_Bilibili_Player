@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-16
+goal: Refine the video search preview, document approved search states and
+  history-only persistence, and defer local integration until visual approval.

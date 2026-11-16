@@ -57,6 +57,15 @@ export type Thread = {
   terminal: string[];
   outputPanels?: string[];
   referenceFiles?: string[];
+  subagents?: Subagent[];
+};
+export type Subagent = {
+  id: string;
+  name: string;
+  task: string;
+  status: "running" | "complete" | "waiting";
+  icon: string;
+  color: "rose" | "blue" | "cyan";
 };
 export type Project = {
   id: string;

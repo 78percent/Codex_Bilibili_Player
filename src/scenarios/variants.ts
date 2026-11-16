@@ -1,6 +1,8 @@
 import { scenarios } from "./index";
 import { desktopScenario } from "./desktopScenario";
-export const variants: Record<string, any[]> = {};
+import type { FileChange } from '../state/types';
+type Scenario = Omit<(typeof scenarios)[string], 'files'> & { files: FileChange[] };
+export const variants: Record<string, (Partial<Scenario> & { title: string })[]> = {};
 variants.atlas = [
   {
     title: "切换租户时清理悬挂请求",
@@ -365,7 +367,7 @@ variants.prism = [
       "### 分区输出命名规范\n\n输出文件名无法稳定关联分区。采用分区目录与固定宽度批次编号，使恢复与审阅使用相同路径约定。\n\n改动位于 `pipeline/paths.py`，右侧文件面板包含修改前后的内容。\n\n- 统一分区目录\n- 定义批次命名\n- 关联检查点路径",
   },
 ];
-export function getScenario(projectId: string, text = "", variant = -1) {
+export function getScenario(projectId: string, text = "", variant = -1): Scenario {
   if (projectId === "orbit" && /播放器|视频|截图|字体|网页/.test(text)) return desktopScenario;
   const base = scenarios[projectId] || scenarios.atlas;
   const list = variants[projectId] || [];

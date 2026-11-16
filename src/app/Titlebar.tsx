@@ -2,6 +2,7 @@ import { useApp, useThread } from "../state/store";
 import { IconButton } from "../components/ui/Button";
 import { Menu } from "../components/ui/Menu";
 import { Icon } from "../components/ui/Icon";
+import { useVideo } from '../features/video/VideoProvider';
 const titles: Record<string, string> = {
   home: "新聊天", project: "项目", automations: "自动化", skills: "技能",
   apps: "应用", review: "代码审查", work: "Work", archive: "已归档", settings: "设置", profile: '个人资料',
@@ -9,7 +10,9 @@ const titles: Record<string, string> = {
 export function Titlebar() {
   const { state, dispatch } = useApp();
   const thread = useThread();
-  if (state.page === "home" || (state.page === "thread" && !thread?.messages.length)) return <header className="titlebar home-titlebar"><IconButton icon="PanelRight" label="切换工作区" onClick={() => { dispatch({ type: "SETTINGS", value: { homePanelOpen: !state.settings.homePanelOpen } }); dispatch({ type: "SET", value: { panelOpen: true } }); }} /></header>;
+  const player = useVideo();
+  const hasVideo = player.ownerThread === thread?.id && !!player.video;
+  if (state.page === "home" || (state.page === "thread" && !thread?.messages.length && !hasVideo)) return <header className="titlebar home-titlebar"><IconButton icon="PanelRight" label="切换工作区" onClick={() => { dispatch({ type: "SETTINGS", value: { homePanelOpen: !state.settings.homePanelOpen } }); dispatch({ type: "SET", value: { panelOpen: true } }); }} /></header>;
   const open = (panelTab: string) => dispatch({ type: "SET", value: { panelOpen: true, panelTab } });
   return <header className={`titlebar ${state.page === "thread" ? "chat-titlebar" : ""}`}>
     <div className="titlebar-left">

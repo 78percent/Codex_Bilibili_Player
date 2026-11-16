@@ -12,16 +12,19 @@
 .activity-detail figcaption { font-size: 11px; color: var(--text-tertiary); }
 .response-duration { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text-tertiary); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin: 10px 0 17px; }
 .change-summary { border: 1px solid var(--border); border-radius: 11px; overflow: hidden; margin-top: 19px; font-size: 13px; }
-.change-summary > header { display: flex; align-items: center; gap: 11px; min-height: 66px; padding: 12px; border-bottom: 1px solid var(--border); }
-.change-symbol { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; background: var(--surface-under); color: var(--text-secondary); }
+.change-summary > header { display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 12px; border-bottom: 1px solid var(--border); }
+.change-symbol { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; background: var(--surface-under); color: var(--text-secondary); }
 .change-summary strong { font-weight: 500; font-size: 14px; }
 .change-summary .diff-stat { margin-top: 4px; }
 .change-summary > header > button { margin-left: auto; border: 1px solid var(--border); border-radius: 20px; padding: 5px 9px; font-size: 12px; white-space: nowrap; }
-.summary-file { display: grid; grid-template-columns: minmax(0, 1fr) 3ch 3ch; gap: 8px; align-items: center; width: 100%; padding: 10px 16px; text-align: left; font-size: 13px; }
+.summary-file { display: grid; grid-template-columns: minmax(0, 1fr) 3ch 3ch; gap: 8px; align-items: center; width: 100%; padding: 8px 12px; text-align: left; font-size: 13px; line-height: 20px; }
 .summary-file:hover { background: var(--surface-under); }
 .summary-file > span { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.summary-path { display: flex; min-width: 0; }
+.summary-directory { overflow: hidden; text-overflow: ellipsis; color: var(--text-secondary); }
+.summary-filename { flex: 0 0 auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .summary-file > b { color: var(--green); font-weight: 400; text-align: right; font-variant-numeric: tabular-nums; }
 .summary-file > em { color: var(--red); font-style: normal; text-align: right; font-variant-numeric: tabular-nums; }
-.summary-more { display: flex; align-items: center; gap: 7px; padding: 10px 16px 12px; font-size: 13px; }
+.summary-more { display: flex; align-items: center; gap: 7px; padding: 8px 12px 10px; font-size: 13px; }
 @keyframes activity-enter { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
 

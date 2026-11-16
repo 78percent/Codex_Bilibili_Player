@@ -2,7 +2,7 @@ import { getScenario } from "../scenarios/variants";
 import { referenceActivities } from "../scenarios/desktopDemo";
 import { formatDuration, responseChunk, runElapsed, scenarioPacing } from "../scenarios/pacing";
 import { time, id, patchThread } from "./helpers";
-import type { AppState, Action } from "./types";
+import type { AppState, Action, Message } from "./types";
 export function reduceScenario(s: AppState, a: Action): AppState {
   switch (a.type) {
     case "TICK": {
@@ -23,7 +23,7 @@ export function reduceScenario(s: AppState, a: Action): AppState {
           nextAt: now + 110,
         };
         next = patchThread(next, thread.id, (t) => {
-          let messages = t.messages.map((m) => ({
+          let messages: Message[] = t.messages.map((m) => ({
             ...m,
             tools: m.tools?.map((tool) => ({ ...tool })),
           }));
@@ -183,7 +183,7 @@ export function reduceScenario(s: AppState, a: Action): AppState {
           ...t,
           status: "stopped",
           messages: [
-            ...t.messages.map((m) => ({
+            ...t.messages.map((m): Message => ({
               ...m,
               tools: m.tools?.map((tool) =>
                 tool.status === "approval"

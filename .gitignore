@@ -17,6 +17,7 @@ release/
 *.pem
 *.key
 bilibili-session.bin
+bilibili-session.bin.tmp
 Cookies
 Cookies-journal
 Local Storage/

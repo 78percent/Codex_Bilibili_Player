@@ -5,6 +5,8 @@ import { IconButton } from "../../components/ui/Button";
 import { Menu } from "../../components/ui/Menu";
 import { Dialog } from "../../components/ui/Dialog";
 import { outputPanels, threadSources, type ThreadSource } from "./resourceData";
+import { SubagentSummary } from "./SubagentSummary";
+import { demoSubagents } from "../../scenarios/subagents";
 
 export function ThreadResources() {
   const { state, dispatch } = useApp();
@@ -40,6 +42,7 @@ export function ThreadResources() {
         </button>)}
         {!outputs.size && <p className="resource-empty">暂无输出</p>}
       </section>
+      <SubagentSummary agents={thread.subagents ?? demoSubagents[thread.id] ?? []} />
       <section>
         <header><span>来源</span><IconButton icon="Plus" label="添加来源文件" onClick={() => files.current?.click()} /></header>
         {(expanded ? sources : sources.slice(0, 3)).map(source => <button key={source.id} className="resource-row source-row" title={source.name}
