@@ -1,0 +1,136 @@
+{
+  "--font-sans": [
+    "var(--font-ui-family,var(--font-sans-default))"
+  ],
+  "--font-mono": [
+    "var(--font-code-family,var(--font-mono-default))"
+  ],
+  "--spacing": [
+    ".25rem"
+  ],
+  "--ease-in": [
+    "cubic-bezier(.4, 0, 1, 1)"
+  ],
+  "--ease-out": [
+    "cubic-bezier(0, 0, .2, 1)"
+  ],
+  "--ease-in-out": [
+    "cubic-bezier(.4, 0, .2, 1)"
+  ],
+  "--font-sans-default": [
+    "-apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    "-apple-system-body, ui-sans-serif, -apple-system, system-ui, \"Segoe UI\", \"Helvetica\", \"Apple Color Emoji\", \"Arial\", sans-serif, \"Segoe UI Emoji\", \"Segoe UI Symbol\""
+  ],
+  "--font-mono-default": [
+    "ui-monospace, \"SFMono-Regular\", \"SF Mono\", menlo, consolas, \"Liberation Mono\", monospace"
+  ],
+  "--transition-duration-basic": [
+    ".15s"
+  ],
+  "--transition-duration-moderate": [
+    ".2s"
+  ],
+  "--transition-duration-relaxed": [
+    ".3s"
+  ],
+  "--ease-basic": [
+    "ease"
+  ],
+  "--ease-enter": [
+    "var(--cubic-enter)"
+  ],
+  "--ease-enter-snappy": [
+    "cubic-bezier(.23, 1, .32, 1)"
+  ],
+  "--ease-spring-snappy": [
+    "linear(0, .086, .2539, .428, .5786, .698, .7879, .8534, .8998, .9323, .9546, .9697, .98, .9868, .9913, .9943, .9963, .9976, .9985, 1)"
+  ],
+  "--composer-radius": [
+    "var(--radius-4xl)",
+    "calc(var(--spacing) * 5.5)",
+    "calc(var(--spacing) * 7)"
+  ],
+  "--app-color-background-surface": [
+    "light-dark(var(--gray-fixed-0),var(--gray-fixed-900))",
+    "var(--white)",
+    "var(--black)",
+    "var(--color-surface-tertiary)"
+  ],
+  "--app-color-background-surface-under": [
+    "light-dark(var(--gray-fixed-50),black)",
+    "var(--white)",
+    "var(--black)",
+    "var(--color-surface-secondary)"
+  ],
+  "--app-color-text-foreground": [
+    "light-dark(#1a1c1f,var(--gray-fixed-150))"
+  ],
+  "--app-color-text-foreground-secondary": [
+    "light-dark(var(--app-color-text-foreground),var(--gray-fixed-0))",
+    "light-dark(color-mix(in oklab, var(--app-color-text-foreground) 70%, transparent),color-mix(in oklab, var(--gray-fixed-0) 70%, transparent))"
+  ],
+  "--app-color-text-foreground-tertiary": [
+    "light-dark(var(--app-color-text-foreground),var(--gray-fixed-0))",
+    "light-dark(color-mix(in oklab, var(--app-color-text-foreground) 50%, transparent),color-mix(in oklab, var(--gray-fixed-0) 50%, transparent))"
+  ],
+  "--sidebar-navigation-header-gap": [
+    "0px",
+    "calc(var(--spacing) * 2)"
+  ],
+  "--sidebar-scroll-content-top-padding": [
+    "var(--spacing)"
+  ],
+  "--sidebar-scroll-header-spacing": [
+    "0px",
+    "var(--spacing)",
+    "1px"
+  ],
+  "--sidebar-row-label-inset": [
+    "calc(var(--height-token-row) + var(--spacing) / 2)",
+    "var(--height-token-row)"
+  ],
+  "--sidebar-child-icon-indent": [
+    "calc((var(--height-token-row) + var(--icon-leading-size)) / 2 + var(--spacing) / 4)",
+    "calc((var(--height-token-row) + var(--icon-leading-size)) / 2 - var(--spacing) / 2)"
+  ],
+  "--sidebar-row-action-opacity": [
+    "0",
+    "1"
+  ],
+  "--sidebar-row-icon-opacity": [
+    "1",
+    "0"
+  ],
+  "--sidebar-row-menu-width": [
+    "0px",
+    "auto"
+  ],
+  "--sidebar-row-action-width": [
+    "auto",
+    "calc(var(--spacing) * 5)"
+  ],
+  "--sidebar-row-menu-overflow": [
+    "hidden",
+    "visible"
+  ],
+  "--sidebar-row-indicator-visibility": [
+    "visible",
+    "hidden"
+  ],
+  "--sidebar-drag-row-pointer-events": [
+    "auto",
+    "none"
+  ],
+  "--sidebar-footer-height": [
+    "0px",
+    "3rem"
+  ],
+  "--sidebar-scroll-header-fade-distance": [
+    "calc(var(--spacing) * 4)",
+    "1px"
+  ],
+  "--sidebar-scroll-header-fade-start": [
+    "var(--spacing)",
+    "0px"
+  ]
+}

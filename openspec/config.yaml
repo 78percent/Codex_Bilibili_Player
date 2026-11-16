@@ -1,0 +1,11 @@
+schema: spec-driven
+
+context: |
+  Project: Codex Bilibili Player.
+  Reference: locally installed Codex Windows 26.1103.7773.0;
+  packaged application version 26.1103.60933.
+  Rebuild a modular Electron, React and TypeScript frontend.
+  Preserve Codex appearance and wording; provide rich fictional development scenarios.
+  Real Bilibili account, homepage and video integration is now authorized. Other scenarios remain simulated.
+  The latest user instruction prohibits tests, lint, type checks and runtime verification. Production builds and packaging require an explicit user request.
+  Avoid redundant labels and descriptions in the UI.

@@ -1,0 +1,23 @@
+node_modules/
+dist/
+release/
+.cache/
+.runtime/
+/Codex-Bilibili-Player.exe
+/Codex-Bilibili-Player-*-x64.exe
+
+# Original font bundles; runtime fonts and licenses live in public/fonts/.
+/fonts/
+
+# Local credentials, environment settings, and session data.
+.env
+.env.*
+!.env.example
+*.log
+*.pem
+*.key
+bilibili-session.bin
+Cookies
+Cookies-journal
+Local Storage/
+Session Storage/

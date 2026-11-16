@@ -1,0 +1,79 @@
+/* Source: Codex 26.1103.60933 webview/assets/async/e77f816560c6.css.
+   Semantic mapping reconstructed for an independent application. */
+:root {
+  --font-ui: "Inter", "Source Han Sans CN", sans-serif;
+  font-family: var(--font-ui);
+  --font-size: 14px;
+  --code-font-size: 13px;
+  --spacing: 4px;
+  --font-mono: "JetBrains Mono", "Source Han Sans CN", monospace;
+  --duration-basic: 150ms;
+  --duration-moderate: 200ms;
+  --duration-relaxed: 300ms;
+  --ease-enter: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-snappy: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --row-height: 36px;
+  --toolbar-height: 46px;
+  --surface: #fff;
+  --surface-under: #f9f9f9;
+  --surface-secondary: #f3f3f3;
+  --surface-tertiary: #ececec;
+  --text: #1a1c1f;
+  --text-secondary: #626468;
+  --text-tertiary: #929397;
+  --border: #eeeeee;
+  --border-strong: #d6d6d6;
+  --hover: #ededed;
+  --selected: #e9e9e9;
+  --accent: #222426;
+  --accent-text: #fff;
+  --green: #00ad48;
+  --green-bg: #ecf7ef;
+  --red: #c85050;
+  --red-bg: #fff0ef;
+  --shadow: 0 8px 32px #00000012, 0 2px 8px #0000000a;
+  --shadow-menu: 0 8px 28px #0000001c, 0 0 0 1px #00000008;
+  color-scheme: light;
+  color: var(--text);
+  background: var(--surface-under);
+}
+:root[data-theme="dark"] {
+  --surface: #181818;
+  --surface-under: #111;
+  --surface-secondary: #222;
+  --surface-tertiary: #2a2a2a;
+  --text: #ececec;
+  --text-secondary: #b2b2b2;
+  --text-tertiary: #7f7f7f;
+  --border: #303030;
+  --border-strong: #454545;
+  --hover: #252525;
+  --selected: #303030;
+  --accent: #ededed;
+  --accent-text: #171717;
+  --green: #6bc891;
+  --green-bg: #172d22;
+  --red: #e78f8b;
+  --red-bg: #352120;
+  --shadow: 0 8px 32px #0005;
+  --shadow-menu: 0 8px 28px #0007, 0 0 0 1px #ffffff0c;
+  color-scheme: dark;
+}
+:root[data-density="紧凑"] {
+  --row-height: 30px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *:before,
+  *:after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+:root[data-motion="reduced"] * {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

@@ -1,0 +1,15 @@
+.video-dock { flex-shrink: 0; border-top: 1px solid var(--border); background: var(--surface); }
+.video-dock > header { height: 40px; display: flex; align-items: center; padding: 0 12px; gap: 7px; }
+.video-heading { display: flex; align-items: center; gap: 8px; padding: 0; font-size: 13px; }
+.video-heading > svg:last-child { color: var(--text-tertiary); }
+.video-dock .icon-button { width: 26px; height: 26px; color: var(--text-tertiary); }
+.video-stage { position: relative; margin: 0 12px 12px; height: clamp(160px, 23vh, 260px); background: #151617; border-radius: 7px; overflow: hidden; }
+.video-stage video { width: 100%; height: 100%; object-fit: contain; }
+.video-empty { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; color: #75787b; font-size: 12px; pointer-events: none; }
+.video-empty > svg { box-sizing: content-box; padding: 17px; border: 1px solid #343638; border-radius: 50%; }
+.video-idle-bar { position: absolute; bottom: 12px; left: 16px; right: 16px; display: flex; align-items: center; gap: 10px; color: #686c70; font: 10px var(--font-ui); }
+.video-idle-bar > div { flex: 1; height: 2px; background: #383b3d; }
+.workspace.video-focused .workspace-content, .workspace.video-focused .workspace-footer { display: none; }
+.video-dock.expanded { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.video-dock.expanded .video-stage { flex: 1; height: auto; }
+
