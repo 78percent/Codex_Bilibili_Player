@@ -8,6 +8,7 @@ import { useApp } from '../../state/store';
 import { useVideoSearch } from './VideoSearchProvider';
 import { VideoResultCard } from './VideoResultCard';
 import { RecentSearches } from './RecentSearches';
+import { SearchTelevision } from './SearchTelevision';
 
 function SuggestionLabel({ term, query }: { term: string; query: string }) {
   const start = term.toLocaleLowerCase().indexOf(query.trim().toLocaleLowerCase());
@@ -22,9 +23,16 @@ function SearchPanel() {
   const result = mode === 'results' ? snapshot.result : null;
   const panel = useRef<HTMLDivElement>(null), input = useRef<HTMLInputElement>(null), scroll = useRef<HTMLDivElement>(null);
   const mounted = useRef(true), picking = useRef(false);
+  const suggestionHeight = useRef(300);
   const [selecting, setSelecting] = useState(''), [playError, setPlayError] = useState(''), [activeSuggestion, setActiveSuggestion] = useState(-1);
   const showSuggestions = mode === 'suggestions';
   const suggestions = showSuggestions ? snapshot.suggestions : [];
+  const suggestionsPending = showSuggestions && search.suggesting;
+
+  function updateDraft(value: string) {
+    if (!showSuggestions && value.trim()) suggestionHeight.current = Math.max(300, scroll.current?.getBoundingClientRect().height || 0);
+    search.setDraft(value);
+  }
 
   useEffect(() => {
     mounted.current = true;
@@ -48,7 +56,23 @@ function SearchPanel() {
   useLayoutEffect(() => {
     if (scroll.current) scroll.current.scrollTop = snapshot.scrollTop;
   }, [search.ready, result, mode]);
+  useLayoutEffect(() => {
+    const node = scroll.current;
+    if (!showSuggestions || !node) return;
+    const measure = () => {
+      const style = getComputedStyle(node);
+      const available = node.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+      const rowHeight = node.querySelector('[role="option"]')?.getBoundingClientRect().height || 46;
+      search.setSuggestionCount(Math.max(6, Math.min(20, Math.ceil(available / rowHeight))));
+    };
+    measure();
+    const observer = new ResizeObserver(measure); observer.observe(node);
+    return () => observer.disconnect();
+  }, [showSuggestions, search.setSuggestionCount]);
   useEffect(() => { setActiveSuggestion(-1); }, [draft, snapshot.suggestions]);
+  useEffect(() => {
+    if (activeSuggestion >= 0) document.getElementById(`video-suggestion-${activeSuggestion}`)?.scrollIntoView({ block: 'nearest' });
+  }, [activeSuggestion]);
 
   function login() {
     search.close();
@@ -67,6 +91,7 @@ function SearchPanel() {
   }
   function onInputKey(event: KeyboardEvent<HTMLInputElement>) {
     if (event.nativeEvent.isComposing) { if (event.key === 'Enter') event.preventDefault(); return; }
+    if (suggestionsPending) return;
     if (event.key === 'ArrowDown' && suggestions.length) {
       event.preventDefault(); setActiveSuggestion(old => (old + 1) % suggestions.length);
     } else if (event.key === 'ArrowUp' && suggestions.length) {
@@ -79,12 +104,12 @@ function SearchPanel() {
   return createPortal(<div className="video-search-scrim" onMouseDown={e => { if (e.currentTarget === e.target) search.close(); }}>
     <div ref={panel} className={`video-search-dialog ${mode === 'results' ? 'has-results' : ''} ${showSuggestions ? 'has-suggestions' : ''}`} role="dialog" aria-modal="true" aria-label="搜索B站视频">
       <form className="video-search-input" onSubmit={e => { e.preventDefault(); if (!selecting) void search.search(draft); }}>
-        <Icon name="Search" size={21} />
+        <SearchTelevision busy={suggestionsPending || searching} />
         <input ref={input} value={draft} maxLength={200} placeholder="搜索B站视频" aria-label="搜索B站视频"
           role="combobox" aria-autocomplete="list" aria-expanded={suggestions.length > 0}
           aria-controls={suggestions.length ? 'video-search-suggestions' : undefined}
-          aria-activedescendant={activeSuggestion >= 0 && suggestions[activeSuggestion] ? `video-suggestion-${activeSuggestion}` : undefined}
-          onChange={e => search.setDraft(e.target.value)} onKeyDown={onInputKey} disabled={!!selecting} />
+          aria-activedescendant={!suggestionsPending && activeSuggestion >= 0 && suggestions[activeSuggestion] ? `video-suggestion-${activeSuggestion}` : undefined}
+          onChange={e => updateDraft(e.target.value)} onCompositionStart={() => search.setComposing(true)} onCompositionEnd={e => { search.setComposing(false); updateDraft(e.currentTarget.value); }} onKeyDown={onInputKey} disabled={!!selecting} />
         {draft && <IconButton type="button" className="icon-button video-search-clear" icon="CircleX" label="清空搜索" disabled={!!selecting} onClick={() => { search.clear(); input.current?.focus(); }} />}
         <button className="video-search-submit" type="submit" disabled={!draft.trim() || !search.ready || !!selecting} aria-label="搜索">
           <Icon name={searching ? 'LoaderCircle' : 'ArrowRight'} size={19} />
@@ -92,7 +117,7 @@ function SearchPanel() {
         <span className="video-search-bar-divider" aria-hidden="true" />
         <IconButton type="button" icon="X" label="关闭视频搜索" onClick={search.close} />
       </form>
-      <div ref={scroll} className="video-search-scroll" onScroll={e => search.setScrollTop(e.currentTarget.scrollTop)}>
+      <div ref={scroll} className="video-search-scroll" style={showSuggestions ? { height: suggestionHeight.current } : undefined} onScroll={e => search.setScrollTop(e.currentTarget.scrollTop)}>
         {!search.ready ? <div className="video-search-status" role="status">正在加载…</div> : <>
           {mode === 'discovery' && <><section className="video-hot-search" aria-label="B站热搜">
             <div className="video-search-section-heading"><h2><Icon name="Flame" size={15} />B站热搜</h2><IconButton icon="RefreshCw" label="刷新热搜" disabled={search.hotLoading} onClick={() => void search.loadHot()} /></div>
@@ -102,10 +127,9 @@ function SearchPanel() {
             {search.hotLoading && !snapshot.hot.length && <div className="video-search-status" role="status">正在获取热搜…</div>}
             {search.hotError && <div className="video-search-error" role="alert"><span>{search.hotError}</span><button onClick={() => void search.loadHot()}>重试</button>{!account.eligible && <button onClick={login}>{account.profile ? '检查账号' : '登录'}</button>}</div>}
           </section><RecentSearches terms={snapshot.recent} onSearch={term => void search.search(term)} /></>}
-          {showSuggestions && <div className="video-search-suggestions">
+          {showSuggestions && <div className="video-search-suggestions" aria-busy={suggestionsPending}>
             {suggestions.length > 0 && <div id="video-search-suggestions" role="listbox" aria-label="搜索联想">{suggestions.map((term, index) => <button key={term} id={`video-suggestion-${index}`} role="option" aria-selected={index === activeSuggestion}
-              onClick={() => void search.search(term)} onMouseEnter={() => setActiveSuggestion(index)}><Icon name="Search" size={16} /><span><SuggestionLabel term={term} query={draft} /></span><Icon name="CornerUpLeft" size={15} /></button>)}</div>}
-            {search.suggesting && <div className="video-search-status subtle" role="status">正在获取联想…</div>}
+              disabled={suggestionsPending} onClick={() => void search.search(term)} onMouseEnter={() => { if (!suggestionsPending) setActiveSuggestion(index); }}><Icon name="Search" size={16} /><span><SuggestionLabel term={term} query={draft} /></span><Icon name="CornerUpLeft" size={15} /></button>)}</div>}
             {search.suggestError && <div className="video-search-error" role="status">{search.suggestError}</div>}
           </div>}
           {searching && <div className="video-search-status" role="status"><Icon name="LoaderCircle" size={18} />正在搜索…</div>}

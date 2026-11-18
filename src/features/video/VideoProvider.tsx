@@ -4,6 +4,7 @@ import { biliRequest } from '../account/api';
 import { useApp } from '../../state/store';
 import { PLAYBACK_RATES, usePlayerPreferences, type PlayerPreferences } from './preferences';
 import { useVideoExtras } from './useVideoExtras';
+import { readPlayback, usePlaybackMemory, type SavedPlayback } from './playbackMemory';
 export type Placement = 'chat' | 'dock';
 export type VideoInfo = { bvid: string; cid: number; title: string; cover: string; author: string; duration: number; canPrevious: boolean; canNext: boolean };
 type Quality = { id: string; quality: number; label: string; codec: string; width: number; height: number };
@@ -24,7 +25,7 @@ export function VideoProvider({ children }: { children: ReactNode }) {
   const { preferences, updatePreferences } = usePlayerPreferences();
   const preferenceRef = useRef(preferences); preferenceRef.current = preferences;
   const lastAudible = useRef(preferences.volume || .8);
-  const selectionRequest = useRef<{ operation: string; bvid?: string; resume?: { cid?: number; time?: number } }>({ operation: 'firstVideo' });
+  const selectionRequest = useRef<{ operation: string; bvid?: string; resume?: { cid?: number; time?: number }; restore?: SavedPlayback }>({ operation: 'firstVideo' });
   const resumeTime = useRef(0);
   const selectionFailed = useRef(false);
   const [video,setVideo] = useState<VideoInfo | null>(null), [loading,setLoading] = useState(false), [preparing,setPreparing] = useState(false), [error,setError] = useState('');
@@ -43,10 +44,10 @@ export function VideoProvider({ children }: { children: ReactNode }) {
     element.current.volume = preferences.volume; element.current.playbackRate = preferences.rate;
   }
   const reset = useCallback(() => {
-    resumeTime.current = 0;
     requestId.current++; preparingRef.current = false; playbackReady.current = false; playIntent.current = false; movingPlayback.current = false;
     const el = element.current!;
     el.dispatchEvent(new Event('bilibili-before-reset'));
+    resumeTime.current = 0;
     el.pause(); engine.current?.reset(); engine.current = null;
     el.removeAttribute('src'); el.load(); el.removeAttribute('poster');
     setPreparing(false); setPlaying(false); setTime(0); setQualities([]); updateQuality('');
@@ -64,19 +65,26 @@ export function VideoProvider({ children }: { children: ReactNode }) {
     if (host) hosts.current[place] = host; else delete hosts.current[place];
     queueMicrotask(attach);
   },[attach]);
-  const loadSelection = useCallback(async (operation: string, autoplay: boolean) => {
+  const loadSelection = useCallback(async (operation: string, autoplay: boolean, restore?: SavedPlayback) => {
     if (!eligible.current) return;
-    selectionRequest.current = { operation };
+    selectionRequest.current = { operation, restore };
     selectionFailed.current = false;
     const previous = operation === 'nextVideo' || operation === 'previousVideo' ? selected.current : null;
     reset(); const id = requestId.current;
     setLoading(true); setError(''); setVideo(null); selected.current = null; setDuration(0);
     const current = stateRef.current;
-    setOwnerThread(previous => operation === 'firstVideo' || !previous ? ((current.page !== 'home' && current.threads.find(t => t.id === current.activeThread)?.id) || 'desktop-demo-layout') : previous);
+    const targetThread = current.threads.find(t => t.id === restore?.thread)?.id
+      || current.threads.find(t => t.id === current.activeThread)?.id
+      || current.threads.find(t => t.id === 'desktop-demo-layout')?.id || current.threads[0]?.id || null;
+    setOwnerThread(previous => restore || operation === 'firstVideo' || !previous ? targetThread : previous);
+    if (targetThread && (restore || !current.activeThread)) dispatch({ type: 'SELECT_THREAD', id: targetThread });
     try {
-      const info = await biliRequest<VideoInfo>(operation);
+      const info = await biliRequest<VideoInfo>(operation, restore ? { bvid: restore.bvid, cid: restore.cid } : undefined);
       if (requestId.current !== id || !eligible.current) return;
       selected.current = info; setVideo(info); setDuration(info.duration); element.current!.poster = info.cover;
+      if (restore) {
+        resumeTime.current = Math.min(restore.time, Math.max(0, info.duration - 1)); setTime(resumeTime.current);
+      }
       setLoading(false);
       if (autoplay) {
         await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
@@ -94,12 +102,23 @@ export function VideoProvider({ children }: { children: ReactNode }) {
   },[reset,attach]);
   const refresh = useCallback(() => loadSelection('firstVideo', false), [loadSelection]);
   useEffect(() => {
+    const current = stateRef.current;
+    dispatch({ type: 'SET', value: { page: current.threads.some(t => t.id === current.activeThread) ? 'thread' : 'home', panelOpen: false } });
+    dispatch({ type: 'SETTINGS', value: { homePanelOpen: false } });
+  }, [dispatch]);
+  useEffect(() => {
     const uid = account.profile?.uid || null;
     if (!account.checking && !uid) {
       lastUser.current = null; reset(); selected.current = null; setVideo(null); setDuration(0); setLoading(false); setError(''); setOwnerThread(null);
     } else if (!account.eligible) { playIntent.current = false; element.current!.pause(); }
-    else if (uid !== lastUser.current) { lastUser.current = uid; void refresh(); }
-  },[account.eligible,account.profile?.uid,account.checking,refresh,reset]);
+    else if (uid !== lastUser.current) {
+      lastUser.current = uid;
+      const saved = uid ? readPlayback(uid) : null;
+      if (saved) void loadSelection('selectVideo', false, saved);
+      else void refresh();
+    }
+  },[account.eligible,account.profile?.uid,account.checking,refresh,reset,loadSelection]);
+  usePlaybackMemory(video, lastUser.current || '', ownerThread, element.current!, resumeTime);
   useEffect(() => {
     const el = element.current!;
     const tick = () => { setTime(el.currentTime || 0); if (Number.isFinite(el.duration)) setDuration(el.duration); };
@@ -117,8 +136,9 @@ export function VideoProvider({ children }: { children: ReactNode }) {
     }
     preparingRef.current = true; playIntent.current = true; setPreparing(true); setError(''); const id = ++requestId.current;
     try {
-      const source = await biliRequest<Playback>('playback');
-      const { MediaPlayer } = await import('dashjs');
+      const [source, { MediaPlayer }] = await Promise.all([
+        biliRequest<Playback>('playback'), import('dashjs'),
+      ]);
       if (id !== requestId.current) return;
       const supported = source.qualities.filter(q => window.MediaSource?.isTypeSupported(`video/mp4; codecs="${q.codec}"`));
       if (!supported.length) throw new Error('当前桌面环境不支持此视频编码');
@@ -197,7 +217,8 @@ export function VideoProvider({ children }: { children: ReactNode }) {
   const retryPlayback = () => {
     if (selected.current && !selectionFailed.current) { void toggle(); return; }
     const request = selectionRequest.current;
-    if (request.operation === 'selectVideo' && request.bvid) void playSearchVideo(request.bvid,request.resume).catch(() => {});
+    if (request.restore) void loadSelection(request.operation, false, request.restore);
+    else if (request.operation === 'selectVideo' && request.bvid) void playSearchVideo(request.bvid,request.resume).catch(() => {});
     else void loadSelection(request.operation, true);
   };
   return <Context.Provider value={{ video, loading, preparing, error, playing, time, duration, volume, qualities, quality, placement, ownerThread,

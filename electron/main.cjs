@@ -21,11 +21,13 @@ else {
     Menu.setApplicationMenu(null);
     window = createWindow();
     window.on("closed", () => { window = null; });
-    await require('./bilibili/index.cjs').setupBilibili(() => window);
+    const servicesReady = require('./bilibili/index.cjs').setupBilibili(() => window);
     if (!window || window.isDestroyed()) return;
     const devUrl = process.env.BILIBILI_DEV_URL;
-    if (!app.isPackaged && devUrl && /^http:\/\/127\.0\.0\.1:\d+\/?$/.test(devUrl)) await window.loadURL(devUrl);
-    else await window.loadFile(path.join(__dirname, "../dist/index.html"));
+    const pageReady = !app.isPackaged && devUrl && /^http:\/\/127\.0\.0\.1:\d+\/?$/.test(devUrl)
+      ? window.loadURL(devUrl)
+      : window.loadFile(path.join(__dirname, "../dist/index.html"));
+    await Promise.all([servicesReady, pageReady]);
   }).catch(() => {
     dialog.showErrorBox('Codex Bilibili Player 无法启动', '无法初始化本机播放服务或加载应用文件。请检查安全软件是否拦截本机连接，并重新下载完整程序后再试。');
     app.quit();

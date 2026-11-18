@@ -9,7 +9,7 @@ export function DesktopBar() {
     { label: "文件", items: [
       { label: "新聊天", shortcut: "Ctrl N", action: () => nav("home") },
       { label: "项目", action: () => nav("project") },
-      { label: "设置", shortcut: "Ctrl ,", action: () => nav("settings") },
+      { label: "设置", disabled: true },
     ] },
     { label: "编辑", items: [
       { label: "搜索聊天", shortcut: "Ctrl K", action: () => dispatch({ type: "SET", value: { searchOpen: true } }) },
@@ -21,7 +21,7 @@ export function DesktopBar() {
       { label: "视频", action: () => { dispatch({ type: "SETTINGS", value: { videoOpen: true } }); dispatch({ type: "SET", value: { panelOpen: true } }); } },
     ] },
     { label: "帮助", items: [
-      { label: "关于 Codex Bilibili Player", action: () => dispatch({ type: "NAVIGATE", page: "settings", section: "about" }) },
+      { label: "关于 Codex Bilibili Player", disabled: true },
     ] },
   ];
   return <header className="desktop-bar">

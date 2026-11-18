@@ -8,7 +8,6 @@ export type Page =
   | "review"
   | "work"
   | "archive"
-  | "settings"
   | "profile";
 export type ToolCall = {
   id: string;
@@ -117,7 +116,6 @@ export type AppState = {
   panelWidth: number;
   panelTab: string;
   searchOpen: boolean;
-  settingsSection: string;
   toast: string;
   selectedFile: string;
   workTab: string;

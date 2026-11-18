@@ -17,7 +17,7 @@ export function Sidebar() {
         { label: "Codex", selected: state.page !== "work", action: () => nav("home") },
         { label: "Work", selected: state.page === "work", action: () => nav("work") },
         { divider: true },
-        { label: "外观", icon: "Palette", action: () => dispatch({ type: "NAVIGATE", page: "settings", section: "appearance" }) },
+        { label: "外观", icon: "Palette", disabled: true },
       ]} />
       <div className="sidebar-header-actions">
         <IconButton icon="Bell" label="未读聊天" onClick={() => dispatch({ type: "SELECT_THREAD", id: visible.find(t => t.unread)?.id || visible[0]?.id })} />

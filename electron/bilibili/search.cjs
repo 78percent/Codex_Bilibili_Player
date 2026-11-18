@@ -26,12 +26,15 @@ function createSearch(client) {
       }));
     },
     searchSuggestions: async value => {
+      const term = keyword(typeof value === 'string' ? value : value?.keyword);
+      const requested = Number(value?.count);
+      const count = Number.isFinite(requested) ? Math.max(6, Math.min(20, Math.ceil(requested))) : 10;
       const data = await client.request('s.search.bilibili.com', '/main/suggest', {
-        term: keyword(value), main_ver: 'v1', highlight: '', func: 'suggest', suggest_type: 'accurate',
-        sub_type: 'tag', tag_num: 6, userid: 0,
+        term, main_ver: 'v1', highlight: '', func: 'suggest', suggest_type: 'accurate',
+        sub_type: 'tag', tag_num: count, userid: 0,
       }, undefined, 'result');
       if (!Array.isArray(data?.tag)) return [];
-      return [...new Set(data.tag.map(item => plainText(item.value || item.name)).filter(Boolean))].slice(0, 6);
+      return [...new Set(data.tag.map(item => plainText(item.value || item.name)).filter(Boolean))].slice(0, count);
     },
     searchVideos: async arg => {
       const term = keyword(arg?.keyword), page = Number(arg?.page || 1);

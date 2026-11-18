@@ -9,6 +9,7 @@ import '../../styles/player-controls.css';
 export function VideoSurface({ place }: { place: Placement }) {
   const player = useVideo(), account = useAccount(), { dispatch } = useApp();
   const active = player.placement === place;
+  const busy = account.checking || player.loading || player.preparing;
   const stage = useRef<HTMLDivElement>(null), latest = useRef(player); latest.current = player;
   const [notice, setNotice] = useState(''), noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flash = useCallback((message: string) => { setNotice(message); if (noticeTimer.current) clearTimeout(noticeTimer.current); noticeTimer.current = setTimeout(() => setNotice(''), 900); }, []);
@@ -36,7 +37,7 @@ export function VideoSurface({ place }: { place: Placement }) {
     else void player.toggle();
   }
   return <div className="bili-player-surface">
-    <div ref={stage} className={`bili-stage ${active ? 'active' : 'inactive'}`} role="button" tabIndex={0} aria-label={active ? player.playing ? '暂停视频' : '播放视频' : '在此处播放'}
+    <div ref={stage} className={`bili-stage ${active ? 'active' : 'inactive'}`} role="button" tabIndex={0} aria-busy={active && busy} aria-label={active ? player.playing ? '暂停视频' : '播放视频' : '在此处播放'}
       onClick={() => { stage.current?.focus({ preventScroll: true }); activate(); }} onKeyDown={event => {
         if (event.target !== event.currentTarget || event.altKey || event.ctrlKey || event.metaKey || event.nativeEvent.isComposing) return;
         const key = event.key.toLowerCase(); if (![' ', 'enter', 'arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'm', 'd'].includes(key)) return;
@@ -54,11 +55,14 @@ export function VideoSurface({ place }: { place: Placement }) {
       <div className={`bili-feedback ${notice ? 'visible' : ''}`} role="status">{notice}</div>
       {(!active || unavailable || !player.playing) && <div className={`bili-video-overlay ${player.video && active && !unavailable ? 'ready' : ''}`}>
         {!active && player.video?.cover && <img src={player.video.cover} referrerPolicy="no-referrer" alt="" />}
-        <button className="bili-play-button" disabled={account.checking || player.loading || player.preparing} aria-label={!active ? '在此处播放' : unavailable || '播放'} onClick={event => { event.stopPropagation(); stage.current?.focus({ preventScroll: true }); activate(); }}><Icon name={player.preparing || account.checking || player.loading ? 'LoaderCircle' : !active ? 'ArrowDownToLine' : 'Play'} size={26} /></button>
-        {(unavailable || !active || player.preparing) && <span>{!active ? (place === 'chat' ? '移回聊天' : '移至右侧') : player.preparing ? '正在加载…' : unavailable}</span>}
+        {active && busy ? <div className="bili-loading-status" role="status"><span className="bili-loading-track" aria-hidden="true"><span /></span><span>加载中</span></div> : <>
+          <button className="bili-play-button" aria-label={!active ? '在此处播放' : unavailable || '播放'} onClick={event => { event.stopPropagation(); stage.current?.focus({ preventScroll: true }); activate(); }}><Icon name={!active ? 'ArrowDownToLine' : 'Play'} size={26} /></button>
+          {(unavailable || !active) && <span>{!active ? (place === 'chat' ? '移回聊天' : '移至右侧') : unavailable}</span>}
+        </>}
       </div>}
     </div>
     {active && player.video && <VideoControls />}
+    {active && !player.video && busy && <div className="bili-controls-placeholder" aria-hidden="true" />}
     {(player.error || account.error) && <div className="bili-video-error" role="alert">{player.error || account.error}<button onClick={() => { if (account.error) void account.refresh(); else player.retryPlayback(); }}>重试</button></div>}
   </div>;
 }

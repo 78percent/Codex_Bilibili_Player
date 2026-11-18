@@ -45,6 +45,24 @@ test('damaged core collections recover and interrupted runs become stopped', () 
   assert.ok(restored.runs[0].pausedAt > 0);
 });
 
+test('removed settings page restores home without overriding explicit startup choices', () => {
+  storage.clear();
+  const state = workspace.restore();
+  state.settings.layoutRevision = 3;
+  state.settings.startPage = '上次位置';
+  state.page = 'settings';
+  workspace.persist(state);
+  assert.equal(workspace.restore().page, 'home');
+  state.settings.startPage = '项目';
+  workspace.persist(state);
+  assert.equal(workspace.restore().page, 'project');
+  state.settings.startPage = '新任务';
+  workspace.persist(state);
+  const restored = workspace.restore();
+  assert.equal(restored.page, 'home');
+  assert.equal(restored.activeThread, '');
+});
+
 test('history is account scoped and reloads cached pages after restart', () => {
   storage.clear();
   const value = { ...historyTypes.emptyHistory(), loaded: true, page: 4, more: true, cursor: { max: 10, view_at: 20, business: 'archive' },

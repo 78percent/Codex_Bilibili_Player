@@ -21,7 +21,8 @@ async function setupBilibili(parent) {
       const win = parent(); if (win && !win.isDestroyed()) win.webContents.send('bilibili:account',data);
     } });
   app.on('before-quit', () => { captions.reset(); media.close(); });
-  await account.restore(); await media.start();
+  // Register IPC immediately; requests wait for services while the window loads.
+  const ready = Promise.all([account.restore(), media.start()]);
   async function selectVideo(bvid, current, requestedCid) {
     const detail = await client.request('api.bilibili.com','/x/web-interface/view',{ bvid });
     if (current !== revision) throw new BiliError('选片已取消','CANCELLED');
@@ -119,8 +120,16 @@ async function setupBilibili(parent) {
   ipcMain.handle('bilibili:request', async (event, operation, arg) => {
     const win = parent();
     if (!win || event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame || !Object.hasOwn(operations,operation)) return { ok: false, error: { message: '请求不可用', code: 'FORBIDDEN' } };
-    try { return { ok: true, data: await operations[operation](arg) }; }
-    catch (error) { return { ok: false, error: { message: error instanceof BiliError ? error.message : '操作未完成，请重试', code: error.code === 'EXPIRED' ? 'EXPIRED' : error instanceof BiliError ? error.code : 'ERROR' } }; }
+    const accountUid = account.snapshot().profile?.uid;
+    try { await ready; return { ok: true, data: await operations[operation](arg) }; }
+    catch (error) {
+      // An API expiry invalidates the short-lived account cache immediately.
+      if (error.code === 'EXPIRED' && accountUid && account.snapshot().profile?.uid === accountUid) {
+        try { await account.clear(); } catch (storageError) { error = storageError; }
+      }
+      return { ok: false, error: { message: error instanceof BiliError ? error.message : '操作未完成，请重试', code: error.code === 'EXPIRED' ? 'EXPIRED' : error instanceof BiliError ? error.code : 'ERROR' } };
+    }
   });
+  await ready;
 }
 module.exports = { setupBilibili };

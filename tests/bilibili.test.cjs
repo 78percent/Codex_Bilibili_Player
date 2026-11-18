@@ -138,7 +138,7 @@ test('encryption failure preserves the authenticated profile and reports persist
   const { createAccount } = await loadWithStubs('../electron/bilibili/account.cjs', {
     electron: { safeStorage: { isEncryptionAvailable: () => true, encryptString: () => { throw new Error('unavailable'); } } },
   });
-  const account = createAccount({ session: { cookies: { get: async () => [{ name: 'SESSDATA' }] } },
+  const account = createAccount({ session: { cookies: { get: async () => [{ name: 'SESSDATA', value: 'synthetic-session' }] } },
     client: { nav: async () => ({ mid: 2, uname: 'fixture', mobile_verified: 1 }) }, userData: 'unused', parent: () => null, onChange: () => {} });
   const snapshot = await account.check();
   assert.equal(snapshot.profile.uid, '2');

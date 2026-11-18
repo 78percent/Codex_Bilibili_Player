@@ -9,6 +9,8 @@ function createAccount({ session, client, userData, parent, onChange }) {
   function cancelQR() { qrGeneration++; qr = null; qrController?.abort(); qrController = null; }
   let writes = Promise.resolve();
   let clearing = null;
+  const verificationTTL = 60_000;
+  let verifiedAt = 0, verifiedSession = '', checking = null;
   const allowed = u => { try { const x = new URL(u); return x.protocol === 'https:' && (x.hostname === 'bilibili.com' || x.hostname.endsWith('.bilibili.com') || x.hostname.endsWith('.geetest.com')); } catch { return false; } };
   const snapshot = () => ({ profile, persistenceError });
   async function save() {
@@ -46,6 +48,7 @@ function createAccount({ session, client, userData, parent, onChange }) {
   async function clear() {
     if (clearing) return clearing;
     generation++; cancelQR(); profile = null; persistenceError = '';
+    verifiedAt = 0; verifiedSession = ''; checking = null;
     if (loginWindow && !loginWindow.isDestroyed()) loginWindow.destroy();
     // Stop playback and hide the account even if filesystem cleanup later fails.
     onChange(snapshot());
@@ -65,12 +68,21 @@ function createAccount({ session, client, userData, parent, onChange }) {
     })();
     try { await clearing; } finally { clearing = null; }
   }
-  async function check() {
+  async function check(force = true) {
     if (clearing) { await clearing; return snapshot(); }
     const current = generation;
-    const cookies = await session.cookies.get({ name: 'SESSDATA' });
+    const cookies = await session.cookies.get({ url: 'https://www.bilibili.com/', name: 'SESSDATA' });
     if (current !== generation) return snapshot();
-    if (!cookies.length) { profile = null; onChange(snapshot()); return snapshot(); }
+    const sessionKey = cookies[0]?.value || '';
+    if (!sessionKey) { verifiedAt = 0; verifiedSession = ''; profile = null; onChange(snapshot()); return snapshot(); }
+    if (checking?.generation === current && checking.sessionKey === sessionKey) return checking.promise;
+    if (!force && profile && verifiedSession === sessionKey && Date.now() - verifiedAt < verificationTTL) return snapshot();
+    const pending = { generation: current, sessionKey, promise: verify(current, sessionKey) };
+    checking = pending;
+    try { return await pending.promise; }
+    finally { if (checking === pending) checking = null; }
+  }
+  async function verify(current, sessionKey) {
     let data;
     try { data = await client.nav(); }
     catch (e) { if (e.code === 'EXPIRED' && current === generation) await clear(); throw e; }
@@ -83,11 +95,12 @@ function createAccount({ session, client, userData, parent, onChange }) {
     };
     await save();
     if (current !== generation) throw new BiliError('登录操作已取消', 'CANCELLED');
+    verifiedSession = sessionKey; verifiedAt = Date.now();
     onChange(snapshot());
     return snapshot();
   }
   async function requireBound() {
-    const state = await check();
+    const state = await check(false);
     if (!state.profile) throw new BiliError('请先登录 B 站', 'EXPIRED');
     if (state.profile.mobileVerified !== true) throw new BiliError(state.profile.mobileVerified === false ? '请先在 B 站绑定手机号，再重新检查' : '暂时无法确认手机号绑定状态，请重试', 'PHONE_REQUIRED');
     return state.profile;

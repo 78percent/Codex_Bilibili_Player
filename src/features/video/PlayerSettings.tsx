@@ -46,7 +46,7 @@ export function PlayerSettings({ anchor, onClose }: { anchor: HTMLButtonElement;
         <Range label="播放速度" value={PLAYBACK_RATES.indexOf(pref.rate)} display={`${pref.rate}×`} min={0} max={4} onChange={index => player.setRate(PLAYBACK_RATES[index])} />
         <hr />
         <Row label="字幕"><PlayerSelect label="字幕" value={tracks.length && subtitleOptions.some(option => option.value === pref.subtitleLanguage) ? pref.subtitleLanguage : 'off'} options={subtitleOptions} disabled={!tracks.length} onChange={subtitleLanguage => player.updatePreferences({ subtitleLanguage })} /></Row>
-        {player.subtitleError && <div className="bili-extra-status">{player.subtitleError}<button onClick={player.reloadExtras}>重试</button></div>}
+        {player.subtitleError && <div className="bili-extra-status">{player.subtitleError}<button onClick={player.reloadSubtitles}>重试</button></div>}
         <button className="bili-settings-link" disabled={!tracks.length} onClick={() => navigate('subtitle')}>字幕样式<Icon name="ChevronRight" size={14} /></button>
         <Row label="显示弹幕"><Switch label="显示弹幕" checked={dm.enabled} onChange={() => updateDM({ enabled: !dm.enabled })} /></Row>
         <button className="bili-settings-link" onClick={() => navigate('danmaku')}>弹幕设置<Icon name="ChevronRight" size={14} /></button>
@@ -60,7 +60,7 @@ export function PlayerSettings({ anchor, onClose }: { anchor: HTMLButtonElement;
       {page === 'danmaku' && <>
         <Row label="显示弹幕"><Switch label="显示弹幕" checked={dm.enabled} onChange={() => updateDM({ enabled: !dm.enabled })} /></Row>
         {player.danmakuLoading && <p className="bili-extra-status">正在加载弹幕…</p>}
-        {player.danmakuError && <div className="bili-extra-status">{player.danmakuError}<button onClick={player.reloadExtras}>重试</button></div>}
+        {player.danmakuError && <div className="bili-extra-status">{player.danmakuError}<button onClick={player.reloadDanmaku}>重试</button></div>}
         {!player.danmakuLoading && !player.danmakuError && dm.enabled && !player.danmakuItems.length && <p className="bili-extra-status">暂无弹幕</p>}
         <hr />
         <Range label="不透明度" value={Math.round(dm.opacity * 100)} display={`${Math.round(dm.opacity * 100)}%`} min={10} max={100} onChange={value => updateDM({ opacity: value / 100 })} />

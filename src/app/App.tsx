@@ -7,7 +7,6 @@ import { Workspace } from "../features/workspace/Workspace";
 import { ReviewPage } from "../features/review/ReviewPage";
 import { AutomationsPage } from "../features/automation/AutomationsPage";
 import { CatalogPage } from "../features/catalog/CatalogPage";
-import { SettingsPage } from "../features/settings/SettingsPage";
 import { ProfilePage } from '../features/account/ProfilePage';
 import { ProjectPage, ArchivePage, WorkPage } from "../features/work/WorkPages";
 import { Titlebar } from "./Titlebar";
@@ -57,23 +56,21 @@ export default function App() {
     const key = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey)) return;
       const k = e.key.toLowerCase();
-      if (["k", "n", "b", ","].includes(k)) e.preventDefault();
+      if (["k", "n", "b"].includes(k)) e.preventDefault();
       if (k === "k") dispatch({ type: "SET", value: { searchOpen: true } });
       if (k === "n")
         dispatch({ type: "NAVIGATE", page: "home" });
       if (k === "b")
         dispatch({ type: "SET", value: { sidebarOpen: !state.sidebarOpen } });
-      if (k === ",") dispatch({ type: "NAVIGATE", page: "settings" });
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, [state.sidebarOpen]);
   const page = state.page;
-  const newChat = page === "home" || (page === "thread" && !state.threads.find(t => t.id === state.activeThread)?.messages.length && !(player.ownerThread === state.activeThread && player.video));
+  const newChat = page === "home" || (page === "thread" && !state.threads.find(t => t.id === state.activeThread)?.messages.length && player.ownerThread !== state.activeThread);
   const workspaceVisible = state.panelOpen && (newChat ? !!state.settings.homePanelOpen : ["thread", "work"].includes(page));
   let content;
   if (page === "thread" || page === "home") content = <Conversation />;
-  else if (page === "settings") content = <SettingsPage />;
   else if (page === 'profile') content = <ProfilePage />;
   else if (page === "automations") content = <AutomationsPage />;
   else if (page === "skills" || page === "apps")

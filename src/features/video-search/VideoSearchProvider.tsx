@@ -12,15 +12,41 @@ function useSearchState() {
   const [searching, setSearching] = useState(false), [error, setError] = useState('');
   const [hotLoading, setHotLoading] = useState(false), [hotError, setHotError] = useState('');
   const [suggesting, setSuggesting] = useState(false), [suggestError, setSuggestError] = useState('');
+  const [composing, setComposing] = useState(false);
+  const [suggestionCount, setSuggestionCount] = useState(6);
+  const suggestionCache = useRef(new Map<string, { terms: string[]; expires: number }>());
+  const suggestionRequests = useRef(new Map<string, Promise<string[]>>());
   const searchRevision = useRef(0), suggestRevision = useRef(0), hotRevision = useRef(0);
   const lastRequest = useRef({ keyword: '', page: 1 });
   const latest = useRef(cache); latest.current = cache;
   const ready = !account.checking && cache.key === accountKey;
   const patch = (value: Partial<SearchSnapshot>) => setCache(old => ({ ...old, value: { ...old.value, ...value } }));
+  const suggestionKey = (key: string, term: string) => `${key}\u0000${term}\u0000${suggestionCount}`;
+  function cachedSuggestions(key: string, term: string) {
+    const id = suggestionKey(key, term), cached = suggestionCache.current.get(id);
+    if (cached && cached.expires > Date.now()) return cached.terms;
+    suggestionCache.current.delete(id);
+    return undefined;
+  }
+  function requestSuggestions(key: string, term: string) {
+    const id = suggestionKey(key, term), pending = suggestionRequests.current.get(id);
+    if (pending) return pending;
+    const request: Promise<string[]> = biliRequest<string[]>('searchSuggestions', { keyword: term, count: suggestionCount }).then(terms => {
+      if (latest.current.key === key) {
+        suggestionCache.current.delete(id);
+        suggestionCache.current.set(id, { terms, expires: Date.now() + 60000 });
+        if (suggestionCache.current.size > 40) suggestionCache.current.delete(suggestionCache.current.keys().next().value!);
+      }
+      return terms;
+    }).finally(() => { if (suggestionRequests.current.get(id) === request) suggestionRequests.current.delete(id); });
+    suggestionRequests.current.set(id, request);
+    return request;
+  }
 
   useEffect(() => {
     if (account.checking || cache.key === accountKey) return;
     searchRevision.current++; suggestRevision.current++; hotRevision.current++;
+    suggestionCache.current.clear(); suggestionRequests.current.clear(); setComposing(false);
     setSearching(false); setSuggesting(false); setHotLoading(false);
     setError(''); setHotError(''); setSuggestError('');
     lastRequest.current = { keyword: '', page: 1 };
@@ -46,21 +72,25 @@ function useSearchState() {
     setSuggesting(false); setSuggestError('');
     const term = cache.value.draft.trim();
     if (!open || !ready || searching || !term || cache.value.mode !== 'suggestions') return;
+    const cached = cachedSuggestions(cache.key, term);
+    if (cached) { patch({ suggestions: cached }); return; }
     setSuggesting(true);
+    if (composing) return;
     const timer = setTimeout(async () => {
       try {
-        const suggestions = await biliRequest<string[]>('searchSuggestions', term);
+        const suggestions = await requestSuggestions(cache.key, term);
         if (revision === suggestRevision.current) patch({ suggestions });
-      } catch (e) { if (revision === suggestRevision.current) setSuggestError((e as Error).message); }
+      } catch (e) { if (revision === suggestRevision.current) { patch({ suggestions: [] }); setSuggestError((e as Error).message); } }
       finally { if (revision === suggestRevision.current) setSuggesting(false); }
-    }, 250);
+    }, 100);
     return () => { clearTimeout(timer); suggestRevision.current++; };
-  }, [open, ready, searching, cache.key, cache.value.draft, cache.value.mode]);
+  }, [open, ready, searching, composing, suggestionCount, cache.key, cache.value.draft, cache.value.mode]);
 
   function setDraft(draft: string) {
     searchRevision.current++; suggestRevision.current++;
-    setSearching(false); setSuggesting(false); setError(''); setSuggestError('');
-    patch({ draft, mode: draft.trim() ? 'suggestions' : 'discovery', suggestions: [], scrollTop: 0 });
+    const term = draft.trim(), cached = cachedSuggestions(cache.key, term);
+    setSearching(false); setSuggesting(!!term && !cached); setError(''); setSuggestError('');
+    patch({ draft, mode: term ? 'suggestions' : 'discovery', suggestions: term ? cached ?? cache.value.suggestions : [], scrollTop: 0 });
   }
   async function search(keyword: string, page = 1) {
     const term = keyword.trim();
@@ -79,15 +109,17 @@ function useSearchState() {
     finally { if (revision === searchRevision.current) setSearching(false); }
   }
   function close() {
+    setComposing(false);
     setOpen(false);
   }
   function clear() {
     searchRevision.current++; suggestRevision.current++;
+    setComposing(false);
     setSearching(false); setSuggesting(false); setError(''); setSuggestError('');
     patch({ mode: 'discovery', draft: '', result: null, suggestions: [], scrollTop: 0 });
   }
   return { open, setOpen, close, ready, snapshot: cache.value, searching, error, hotLoading, hotError,
-    suggesting, suggestError, setDraft, search, loadHot, clear, retry: () => search(lastRequest.current.keyword, lastRequest.current.page),
+    suggesting, suggestError, setDraft, setComposing, setSuggestionCount, search, loadHot, clear, retry: () => search(lastRequest.current.keyword, lastRequest.current.page),
     setScrollTop: (scrollTop: number) => patch({ scrollTop }) };
 }
 const Context = createContext<ReturnType<typeof useSearchState>>(null!);

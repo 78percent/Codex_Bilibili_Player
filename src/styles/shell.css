@@ -42,8 +42,7 @@
   color: var(--text-tertiary);
 }
 [data-theme="dark"] .brand-button img,
-[data-theme="dark"] .home-hero img,
-[data-theme="dark"] .about-card img {
+[data-theme="dark"] .home-hero img {
   filter: invert(1);
 }
 .sidebar-nav {

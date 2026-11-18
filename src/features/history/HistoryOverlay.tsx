@@ -28,7 +28,7 @@ export function HistoryOverlay() {
     return { width,left:clamp(anchor?.left || 8,window.innerWidth - width - 8),top:clamp((anchor?.top || window.innerHeight - 20) - node.offsetHeight - 8,window.innerHeight - node.offsetHeight - 8) };
   });
   useFloatingMotion(panel,view.open,view.mode,reduced,node => {
-    const width = Math.min(view.mode === 'quick' ? 330 : 500,window.innerWidth - 24);
+    const width = Math.min(view.mode === 'quick' ? 440 : 530,window.innerWidth - 24);
     if (view.mode === 'manager') {
       const rail = document.querySelector('.activity-rail')?.getBoundingClientRect(), top = document.querySelector('.desktop-bar')?.getBoundingClientRect().bottom || 36;
       return {width,left:clamp((rail?.right || 42) + 8,window.innerWidth - width - 8),top:clamp(top + 8,window.innerHeight - node.offsetHeight - 8)};

@@ -167,7 +167,6 @@ export function createSeed(): AppState {
     tabs: ["diff"],
     selectedFile: "",
     searchOpen: false,
-    settingsSection: "general-settings",
     toast: "",
     workTab: "all",
   };

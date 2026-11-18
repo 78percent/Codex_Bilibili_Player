@@ -13,7 +13,6 @@ export function reducer(s: AppState, a: Action): AppState {
         ...s,
         page: a.page,
         ...(a.page === "home" ? { activeThread: "", settings: { ...s.settings, homePanelOpen: false, newChatProjectPicked: false } } : {}),
-        ...(a.section ? { settingsSection: a.section } : {}),
       };
     case "SELECT_THREAD": {
       const t = s.threads.find((t) => t.id === a.id);

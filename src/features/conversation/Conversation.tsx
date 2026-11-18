@@ -27,7 +27,7 @@ export function Conversation() {
   const [showDown, setShowDown] = useState(false);
   const messages = state.page === "home" ? [] : thread?.messages || [];
   const groups = groupMessages(messages);
-  const ownsVideo = state.page === 'thread' && thread?.id === player.ownerThread && !!player.video;
+  const ownsVideo = state.page === 'thread' && thread?.id === player.ownerThread;
   const empty = !messages.length && !ownsVideo;
   useEffect(() => {
     nearBottom.current = true;

@@ -1,4 +1,18 @@
 const { BiliError } = require('./client.cjs');
+const { inflateRawSync, unzipSync } = require('node:zlib');
+
+function decodeDanmaku(bytes) {
+  const text = bytes.toString('utf8').trimStart();
+  if (text.startsWith('<') && /<i[\s>]/.test(text)) return text;
+  // Electron decodes HTTP Content-Encoding; some endpoints return raw deflate bodies instead.
+  for (const inflate of [inflateRawSync, unzipSync]) {
+    try {
+      const xml = inflate(bytes, { maxOutputLength: 16 * 1024 * 1024 }).toString('utf8').trimStart();
+      if (xml.startsWith('<') && /<i[\s>]/.test(xml)) return xml;
+    } catch { /* Try the other documented compression framing. */ }
+  }
+  throw new BiliError('弹幕接口未返回有效 XML', 'DANMAKU_FORMAT');
+}
 
 function createCaptions(client, publicSession) {
   let generation = 0;
@@ -12,9 +26,10 @@ function createCaptions(client, publicSession) {
         headers: { Referer: 'https://www.bilibili.com/' },
         signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]),
       });
-      if (!response.ok) { await response.body?.cancel(); throw new BiliError('暂时无法读取字幕或弹幕'); }
-      return format === 'json' ? await response.json() : await response.text();
+      if (!response.ok) { await response.body?.cancel(); throw new BiliError(`字幕或弹幕请求失败（HTTP ${response.status}）`); }
+      return format === 'json' ? await response.json() : Buffer.from(await response.arrayBuffer());
     } catch (error) {
+      if (controller.signal.aborted) throw new BiliError('选片已取消', 'CANCELLED');
       if (error instanceof BiliError) throw error;
       throw new BiliError('暂时无法读取字幕或弹幕');
     } finally { requests.delete(controller); }
@@ -42,9 +57,17 @@ function createCaptions(client, publicSession) {
         .map(({ from, to, content }) => ({ from, to, content })).sort((a, b) => a.from - b.from);
     },
     async danmaku(video) {
-      const xml = await download(`https://api.bilibili.com/x/v1/dm/list.so?oid=${video.cid}`, 'text');
-      if (!xml.trimStart().startsWith('<') || !/<i[\s>]/.test(xml)) throw new BiliError('弹幕格式不可用');
-      return xml;
+      const current = generation;
+      const urls = [`https://api.bilibili.com/x/v1/dm/list.so?oid=${video.cid}`, `https://comment.bilibili.com/${video.cid}.xml`];
+      for (let index = 0; index < urls.length; index++) {
+        try {
+          const bytes = await download(urls[index], 'bytes');
+          if (current !== generation) throw new BiliError('选片已取消', 'CANCELLED');
+          return decodeDanmaku(bytes);
+        } catch (error) {
+          if (current !== generation || error.code === 'CANCELLED' || index === urls.length - 1) throw error;
+        }
+      }
     },
   };
 }

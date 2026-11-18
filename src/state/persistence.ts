@@ -26,14 +26,13 @@ export function restore(): AppState {
       ...saved,
       sidebarWidth: saved.sidebarWidth === 276 ? fresh.sidebarWidth : saved.sidebarWidth ?? fresh.sidebarWidth,
       ...(saved.settings?.startPage === "新任务"
-        ? { page: "home", activeThread: "" }
-        : saved.settings?.startPage === "项目"
-          ? { page: "project" }
-          : {}),
+        ? { activeThread: "" }
+        : {}),
       toast: "",
       searchOpen: false,
       settings: { ...fresh.settings, ...saved.settings, ...(upgradeLayout ? { layoutRevision: 3, videoOpen: false, videoExpanded: false, model: aliases[saved.settings?.model] || saved.settings?.model || "6 Astra" } : {}), homePanelOpen: false, showDiff: false },
       ...(upgradeLayout ? { page: "thread", activeThread: "desktop-demo-composer", activeProject: "orbit", sidebarWidth: fresh.sidebarWidth, panelWidth: fresh.panelWidth, panelTab: "diff", tabs: ["diff"], selectedFile: "" } : {}),
+      page: upgradeLayout ? 'thread' : saved.settings.startPage === '新任务' ? 'home' : saved.settings.startPage === '项目' ? 'project' : saved.page === 'settings' ? 'home' : saved.page || fresh.page,
       // Start with the workspace collapsed even when the previous session saved it open.
       panelOpen: false,
       runs: (saved.runs || []).map((r: any) => ({

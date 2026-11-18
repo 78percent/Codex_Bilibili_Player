@@ -5,10 +5,12 @@ import { AccountMenu } from '../features/account/AccountMenu';
 import { useVideoSearch } from '../features/video-search/VideoSearchProvider';
 import { useHistory } from '../features/history/HistoryProvider';
 import { Icon } from '../components/ui/Icon';
+import { useVideo } from '../features/video/VideoProvider';
 export function ActivityRail() {
   const { state, dispatch } = useApp();
   const videoSearch = useVideoSearch();
   const history = useHistory();
+  const player = useVideo();
   const nav = (page: string) => dispatch({ type: "NAVIGATE", page });
   return <nav className="activity-rail" aria-label="功能栏">
     <div className={["home", "thread", "project"].includes(state.page) ? "rail-selected" : ""}><IconButton icon="House" label="主页" onClick={() => nav("home")} /></div>
@@ -25,8 +27,8 @@ export function ActivityRail() {
       { label: "已归档", icon: "Archive", action: () => nav("archive") },
     ]} />
     <div className="spacer" />
-    <IconButton icon="CirclePlay" label="打开示例对话" onClick={() => dispatch({ type: "SELECT_THREAD", id: "desktop-demo-layout" })} />
-    <IconButton icon="Settings" label="设置" onClick={() => nav("settings")} />
+    <IconButton icon="CirclePlay" label="回到视频对话" onClick={() => { history.close(); videoSearch.setOpen(false); player.move('chat'); }} />
+    <IconButton icon="Settings" label="设置" disabled />
     <AccountMenu />
   </nav>;
 }
