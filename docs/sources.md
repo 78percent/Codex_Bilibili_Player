@@ -1,41 +1,34 @@
-# 资源与研究来源
+# 资源来源
 
-## Codex Windows
+## 项目自身素材
 
-- 本机 Windows 包：OpenAI.Codex_26.1103.7773.0_x64__2p2nqsd0c76g0。
-- app.asar 内应用版本：26.1103.60933。
-- app.asar SHA-256：ee88fdd77fb7346efb5e91ce73c7c0eee4eba390ffba3192635d5cdbe44e4097。
-- REA 父证据：ev_694286f7d3b6116c275803e05e219c1b02c160a62a15a067bcbcf87148f4d4dc。
-- 样式依据：webview/assets/async/e77f816560c6.css。采用 4px spacing、14px base、系统字体、150/200/300ms 动画与原版曲线；其他布局参数为模块化重建值。
-- 设置注册来源：webview/assets/async/499225.6d2e47bea2.js 的 n74t 模块。包内共享功能注册不等于当前账号可见性。
-- public/blossom.svg 来自 webview/assets/openai-blossom-31ad67e73c52.svg。
-- assets/app.ico 来自原安装包 resources/chatgpt-app-dark.ico。
+- `assets/app.svg` 与 `assets/app.ico`：为本项目绘制的几何播放器图标，按项目 MIT 许可分发。
+- `public/workspace-reference.svg`：项目绘制的工作区布局示意，用于本地演示场景。
+- 界面采用聊天与分栏工作区布局。独立实现不包含原版桌面软件的专有后端。
+- 1.4.0 已替换来自第三方安装包的应用图标，移除未使用的第三方标识。原始逆向研究文件、个人截图和本机路径不在新版公开文件中。
 
-原版资源保留其原有权利归属，仅用于用户请求的本地界面研究。没有把原版应用的专有后端或账号能力移植到本项目。没有把桌面资源的许可推定为 openai/codex CLI 仓库的 Apache-2.0。
+## 字体
 
-## 参考仓库
+| 字体 | 来源 | 随包许可 |
+| --- | --- | --- |
+| Inter 4.1 | [rsms/inter](https://github.com/rsms/inter/releases/tag/v4.1) | `public/fonts/Inter-LICENSE.txt` |
+| Source Han Sans CN 2.005R | [adobe-fonts/source-han-sans](https://github.com/adobe-fonts/source-han-sans/releases/tag/2.005R) | `public/fonts/SourceHanSans-LICENSE.txt` |
+| JetBrains Mono 2.304 | [JetBrains/JetBrainsMono](https://github.com/JetBrains/JetBrainsMono/releases/tag/v2.304) | `public/fonts/JetBrainsMono-OFL.txt` |
 
-- https://github.com/openai/codex ：公开 CLI 项目，与桌面 GUI 分开。
-- https://github.com/BrokenHT/Cotex_DeskReader ：借鉴 Electron 外壳与内容替换思路，未复制其业务实现或视觉主题。
+字体采用 SIL OFL 1.1；不将系统字体复制进应用。历史阶段用过的 Open Sans 不在当前运行资源中。
 
-## 新项目依赖
+## 图标与软件
 
-React (MIT)、Electron (MIT)、Vite (MIT)、TypeScript (Apache-2.0)、Lucide (ISC)、electron-builder (MIT)。依赖许可证保留在安装依赖和运行时中。Electron 的 Chromium 许可随打包运行时保留。
+- [Lucide](https://lucide.dev/)：界面图标，ISC / Feather 部分 MIT。
+- [Simple Icons 16.0.0](https://github.com/simple-icons/simple-icons/tree/16.0.0)：Bilibili 服务图标，CC0-1.0；仍须尊重商标权。
+- [dash.js](https://github.com/Dash-Industry-Forum/dash.js)：DASH 播放，BSD-3-Clause。
+- React、React DOM、Electron、node-qrcode 等完整声明见 [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md) 与 `licenses/`。
 
-## 1.1.0 截图补充依据
+## 接口依据
 
-用户在本会话提供 codex-clipboard-eeffaf89-31bf-478b-b27f-0b043f13e3c9.png，作为四区域布局和字体层级参照。产品资源 workspace-reference.svg 为自行绘制的示意图；活动记录、网页来源列表和过程摘要是本地演示数据，没有进行真实联网检索。
+- [B站开放平台](https://openhome.bilibili.com/doc)：公开平台文档没有提供本项目所需的完整全站视频搜索替代接口。
+- [社区搜索请求文档](https://github.com/rinnein/bilibili-API-collect/blob/1e24c6b1889160c4c35c01416aa4239501accf5f/docs/search/search_request.md)：WBI 分类搜索的排序、时长、分区与综合搜索模块。
+- [社区搜索响应文档](https://github.com/rinnein/bilibili-API-collect/blob/f6760f4be38d5b592d396b211e48c666286524de/docs/search/search_response.md)：视频统计与 `bili_user` 字段。
+- [分区对照](https://github.com/rinnein/bilibili-API-collect/blob/4dc60fb0bba0e817a6fba3743daf8ad6b63a1e14/docs/video/video_zone.md)：当前 `tids` 对应的 `tid` 表，不混用 `tid_v2`。
 
-## 1.2.0 字体和补充截图
-
-布局依据本轮六张用户截图。字体源为用户放入项目的fonts/Open-Sans/Open-Sans/Open-Sans-2.ttf，读取name表为Open Sans Regular。源文件未改名，随应用发布的副本为public/fonts/open-sans.ttf。英文/数字由Open Sans绘制，缺失中文字符由Microsoft YaHei UI/系统字体回退。
-
-## 1.2.1字体来源
-
-- Inter 4.1：用户项目fonts/Inter-4.1/web/InterVariable.woff2及InterVariable-Italic.woff2，LICENSE.txt随public/fonts资源打包。
-- Source Han Sans CN：Adobe官方2.005R，https://github.com/adobe-fonts/source-han-sans/releases/download/2.005R/19_SourceHanSansCN.zip 。使用Regular/Medium/Bold OTF，LICENSE.txt随包发布。
-- 文本栈为Inter、Source Han Sans CN、sans-serif。Inter中没有的汉字与中文标点使用思源黑体；代码区也遵从用户这次的字体分配。
-
-## 1.2.2代码字体来源
-
-JetBrains Mono 2.304来自用户目录fonts/JetBrainsMono-2.304，使用fonts/variable下正体与斜体可变TTF，字重100–800。发布副本为public/fonts/jetbrains-mono-variable.ttf及jetbrains-mono-variable-italic.ttf，原OFL.txt复制为JetBrainsMono-OFL.txt随应用分发。代码字体分配取代1.2.1代码区沿用Inter的决定；普通界面字体不变。
+社区资料不是服务方对接口稳定性的承诺。运行时媒体、封面和头像来自 B站及内容权利人，不因项目采用 MIT 而获得再分发授权。

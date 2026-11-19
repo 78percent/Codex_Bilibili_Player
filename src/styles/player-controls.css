@@ -12,6 +12,10 @@
 .bili-player-surface .bili-controls-row{display:flex;flex-wrap:nowrap;align-items:center;gap:6px}
 .bili-transport,.bili-control-tools{display:flex;align-items:center;gap:3px;flex-shrink:0}
 .bili-control-tools{margin-left:auto}
+.bili-parts-trigger{display:flex;align-items:center;gap:5px;height:30px;padding:0 7px;border-radius:6px;white-space:nowrap;font-size:11px;flex-shrink:0}
+.bili-parts-trigger>span{font-size:10px;color:var(--text-secondary);font-variant-numeric:tabular-nums}
+.bili-parts-trigger:hover,.bili-parts-trigger[aria-expanded=true]{background:var(--hover)}
+.bili-volume-number{min-width:29px;padding-right:3px;font-size:10px;color:var(--text-secondary);font-variant-numeric:tabular-nums}
 .bili-player-surface .bili-controls .icon-button{width:28px;height:30px;border-radius:6px;flex-shrink:0}
 .bili-player-surface .bili-controls .icon-button svg{width:16px;height:16px}
 .bili-transport .bili-time{padding:0 5px;font-size:10px;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -33,6 +37,18 @@
 .bili-subtitle-layer.with-background span{background:#0009;border-radius:4px}
 .bili-feedback{position:absolute;top:12px;left:12px;z-index:4;padding:6px 9px;border-radius:6px;background:#172026d9;color:white;font-size:11px;pointer-events:none;opacity:0;transform:translateY(-3px);transition:opacity 130ms,transform 160ms}
 .bili-feedback.visible{opacity:1;transform:none}
+.bili-parts-panel{position:fixed;z-index:1000;display:flex;flex-direction:column;overflow:hidden;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);border-radius:10px;box-shadow:var(--shadow-menu);font-size:12px;animation:bili-panel-in 180ms cubic-bezier(.2,.8,.2,1)}
+.bili-parts-panel>header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:39px;padding:0 8px 0 13px;border-bottom:1px solid var(--border)}
+.bili-parts-count{margin-left:6px;color:var(--text-secondary);font-variant-numeric:tabular-nums}
+.bili-parts-panel>header button{display:grid;place-items:center;width:28px;height:28px;border-radius:6px;color:var(--text-secondary)}
+.bili-parts-list{min-height:0;padding:5px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent}
+.bili-part{display:grid;grid-template-columns:minmax(27px,auto) minmax(0,1fr) auto;align-items:center;gap:6px;width:100%;min-height:37px;padding:7px 9px;border-radius:6px;text-align:left;font-size:12px;transition:background-color 120ms,color 120ms}
+.bili-parts-panel button:hover{background:var(--hover)}
+.bili-parts-panel .bili-part[aria-selected=true]{background:var(--text);color:var(--surface)}
+.bili-part-number,.bili-part-duration{font-size:11px;font-variant-numeric:tabular-nums;opacity:.72;white-space:nowrap}
+.bili-part-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bili-part-duration{text-align:right;min-width:35px}
+.bili-parts-panel button:focus-visible{outline:2px solid var(--text-secondary);outline-offset:-2px}
 .bili-settings-panel{position:fixed;z-index:1000;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:14px;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);border-radius:12px;box-shadow:var(--shadow-menu);font-size:12px;transform-origin:bottom right;animation:bili-panel-in 180ms cubic-bezier(.2,.8,.2,1)}
 .bili-settings-panel.closing{pointer-events:none;animation:bili-panel-out 120ms ease-in forwards}
 .bili-settings-panel>header{display:flex;align-items:center;gap:6px;margin-bottom:14px}
@@ -82,6 +98,7 @@
 .bili-select-options svg{flex-shrink:0}
 .video-dock.expanded .bili-player-surface{display:flex;flex-direction:column;flex:1;min-height:0}
 .video-dock.expanded .bili-player-surface .bili-stage{flex:1;min-height:100px;aspect-ratio:auto}
+@container(max-width:480px){.bili-parts-trigger>span,.bili-volume-number{display:none}}
 @container(max-width:400px){.bili-total{display:none}}
 @container(max-width:330px){.bili-player-surface .bili-time{display:none}}
 @container(max-width:290px){.bili-danmaku-toggle{display:none}}
@@ -90,4 +107,5 @@
 @keyframes bili-page-forward{from{opacity:.3;transform:translateX(8px)}to{opacity:1;transform:none}}
 @keyframes bili-page-back{from{opacity:.3;transform:translateX(-8px)}to{opacity:1;transform:none}}
 @keyframes bili-select-down{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-@media(prefers-reduced-motion:reduce){.bili-player-surface *,.bili-settings-panel *,.bili-settings-panel{transition:none!important;animation:none!important}}
+@media(prefers-reduced-motion:reduce){.bili-player-surface *,.bili-settings-panel *,.bili-settings-panel,.bili-parts-panel,.bili-parts-panel *{transition:none!important;animation:none!important}}
+[data-motion=reduced] .bili-parts-panel,[data-motion=reduced] .bili-parts-panel *{transition:none!important;animation:none!important}

@@ -1,7 +1,9 @@
 import type { SearchSnapshot } from './types';
+import { defaultSearchOptions } from './options';
 
 export const emptySearch = (recent: string[] = []): SearchSnapshot => ({
   mode: 'discovery', recent, draft: '', result: null, scrollTop: 0, hot: [], suggestions: [],
+  options: { ...defaultSearchOptions }, filtersOpen: false,
 });
 const prefix = 'codex-bilibili-player:video-search-history:v2:';
 const legacyPrefix = 'codex-bilibili-player:video-search:v1:';

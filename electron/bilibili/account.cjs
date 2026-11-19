@@ -2,6 +2,7 @@ const { BrowserWindow, safeStorage, shell } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { BiliError } = require('./client.cjs');
+const { windowSize } = require('../window-size.cjs');
 function createAccount({ session, client, userData, parent, onChange }) {
   const file = path.join(userData, 'bilibili-session.bin');
   let profile = null, loginWindow = null, generation = 0, qr = null, persistenceError = '';
@@ -129,7 +130,8 @@ function createAccount({ session, client, userData, parent, onChange }) {
     if (!['password','sms'].includes(method)) throw new BiliError('未知登录方式');
     cancelQR();
     if (loginWindow && !loginWindow.isDestroyed()) { loginWindow.focus(); return; }
-    loginWindow = new BrowserWindow({ width: 1080, height: 760, title: method === 'sms' ? 'B站手机验证码登录' : 'B站账号密码登录', parent: parent(), autoHideMenuBar: true,
+    const owner = parent();
+    loginWindow = new BrowserWindow({ ...windowSize({ width: 1080, height: 760 }, owner), title: method === 'sms' ? 'B站手机验证码登录' : 'B站账号密码登录', parent: owner, autoHideMenuBar: true,
       webPreferences: { session, sandbox: true, contextIsolation: true, nodeIntegration: false } });
     const win = loginWindow;
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));

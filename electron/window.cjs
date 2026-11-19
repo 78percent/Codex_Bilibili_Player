@@ -1,9 +1,10 @@
 const { BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
+const { windowSize } = require('./window-size.cjs');
 
 function createWindow() {
   const window = new BrowserWindow({
-    width: 1600, height: 1000, minWidth: 1100, minHeight: 640,
+    ...windowSize({ width: 1600, height: 1000, minWidth: 1100, minHeight: 640 }),
     title: 'Codex Bilibili Player', frame: false, backgroundColor: '#f9f9f9',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),

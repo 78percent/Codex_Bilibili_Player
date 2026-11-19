@@ -18,55 +18,60 @@ function parseDanmaku(xml: string): DanmakuItem[] {
 }
 export function useVideoExtras(video: VideoInfo | null, eligible: boolean, language: string, danmakuEnabled: boolean) {
   const key = eligible && video ? `${video.bvid}:${video.cid}` : '';
+  // A new selection can reuse the same CID after the main process resets its caption tracks.
+  const selection = useMemo(() => key && video ? { key, video } : null, [key, video]);
   const [retry, setRetry] = useState(0);
   const [danmakuRetry, setDanmakuRetry] = useState(0);
-  const commentCache = useRef<{ key: string; items: DanmakuItem[] } | null>(null);
-  const [metadata, setMetadata] = useState<{ key: string; tracks: SubtitleTrack[]; error: string; loading: boolean }>({ key: '', tracks: [], error: '', loading: false });
-  const [text, setText] = useState<{ key: string; cues: SubtitleCue[]; error: string; loading: boolean }>({ key: '', cues: [], error: '', loading: false });
-  const [comments, setComments] = useState<{ key: string; items: DanmakuItem[]; error: string; loading: boolean }>({ key: '', items: [], error: '', loading: false });
+  const commentCache = useRef<{ selection: typeof selection; items: DanmakuItem[] } | null>(null);
+  const [metadata, setMetadata] = useState<{ selection: typeof selection; tracks: SubtitleTrack[]; error: string; loading: boolean }>({ selection: null, tracks: [], error: '', loading: false });
+  const [text, setText] = useState<{ selection: typeof selection; key: string; cues: SubtitleCue[]; error: string; loading: boolean }>({ selection: null, key: '', cues: [], error: '', loading: false });
+  const [comments, setComments] = useState<{ selection: typeof selection; items: DanmakuItem[]; error: string; loading: boolean }>({ selection: null, items: [], error: '', loading: false });
   useEffect(() => {
-    if (!key || !video) return;
+    if (!selection) return;
+    const { video } = selection;
     let cancelled = false;
-    setMetadata({ key, tracks: [], error: '', loading: true });
+    setMetadata({ selection, tracks: [], error: '', loading: true });
     biliRequest<SubtitleTrack[]>('subtitles', { bvid: video.bvid, cid: video.cid }).then(tracks => {
-      if (!cancelled) setMetadata({ key, tracks, error: '', loading: false });
-    }).catch(error => { if (!cancelled) setMetadata({ key, tracks: [], error: error.message, loading: false }); });
+      if (!cancelled) setMetadata({ selection, tracks, error: '', loading: false });
+    }).catch(error => { if (!cancelled) setMetadata({ selection, tracks: [], error: error.message, loading: false }); });
     return () => { cancelled = true; };
-  }, [key, retry]);
-  const tracks = useMemo(() => metadata.key === key ? metadata.tracks : [], [metadata, key]);
+  }, [selection, retry]);
+  const tracks = useMemo(() => metadata.selection === selection ? metadata.tracks : [], [metadata, selection]);
   const track = language === 'off' ? undefined : language === 'auto' ? tracks.find(t => t.language.startsWith('zh')) || tracks[0] : tracks.find(t => t.language === language);
   const trackKey = track ? `${key}:${track.id}` : '';
   useEffect(() => {
-    if (!trackKey || !video || !track) return;
+    if (!trackKey || !selection || !track) return;
+    const { video } = selection;
     let cancelled = false;
-    setText({ key: trackKey, cues: [], error: '', loading: true });
+    setText({ selection, key: trackKey, cues: [], error: '', loading: true });
     biliRequest<SubtitleCue[]>('subtitle', { bvid: video.bvid, cid: video.cid, id: track.id }).then(cues => {
-      if (!cancelled) setText({ key: trackKey, cues, error: '', loading: false });
-    }).catch(error => { if (!cancelled) setText({ key: trackKey, cues: [], error: error.message, loading: false }); });
+      if (!cancelled) setText({ selection, key: trackKey, cues, error: '', loading: false });
+    }).catch(error => { if (!cancelled) setText({ selection, key: trackKey, cues: [], error: error.message, loading: false }); });
     return () => { cancelled = true; };
-  }, [trackKey, retry]);
+  }, [selection, trackKey, retry]);
   useEffect(() => {
-    if (!key) { commentCache.current = null; return; }
-    if (!video || !danmakuEnabled) return;
-    if (commentCache.current?.key === key) {
-      setComments({ key, items: commentCache.current.items, error: '', loading: false }); return;
+    if (!selection) { commentCache.current = null; return; }
+    if (!danmakuEnabled) return;
+    const { video } = selection;
+    if (commentCache.current?.selection === selection) {
+      setComments({ selection, items: commentCache.current.items, error: '', loading: false }); return;
     }
     let cancelled = false;
-    setComments({ key, items: [], error: '', loading: true });
+    setComments({ selection, items: [], error: '', loading: true });
     biliRequest<string>('danmaku', { bvid: video.bvid, cid: video.cid }).then(xml => {
       if (cancelled) return;
       const items = parseDanmaku(xml);
-      commentCache.current = { key, items };
-      setComments({ key, items, error: '', loading: false });
-    }).catch(error => { if (!cancelled) setComments({ key, items: [], error: error.message, loading: false }); });
+      commentCache.current = { selection, items };
+      setComments({ selection, items, error: '', loading: false });
+    }).catch(error => { if (!cancelled) setComments({ selection, items: [], error: error.message, loading: false }); });
     return () => { cancelled = true; };
-  }, [key, danmakuEnabled, danmakuRetry]);
+  }, [selection, danmakuEnabled, danmakuRetry]);
   return {
-    tracks, subtitleTrack: track?.id || '', cues: text.key === trackKey ? text.cues : [],
-    subtitleError: metadata.key === key && metadata.error || text.key === trackKey && text.error || '',
-    subtitleLoading: !!key && (metadata.key !== key || metadata.loading || !!trackKey && (text.key !== trackKey || text.loading)),
-    danmakuItems: comments.key === key ? comments.items : [], danmakuError: comments.key === key ? comments.error : '',
-    danmakuLoading: !!key && danmakuEnabled && (comments.key !== key || comments.loading),
+    tracks, subtitleTrack: track?.id || '', cues: text.selection === selection && text.key === trackKey ? text.cues : [],
+    subtitleError: metadata.selection === selection && metadata.error || text.selection === selection && text.key === trackKey && text.error || '',
+    subtitleLoading: !!selection && (metadata.selection !== selection || metadata.loading || !!trackKey && (text.selection !== selection || text.key !== trackKey || text.loading)),
+    danmakuItems: comments.selection === selection ? comments.items : [], danmakuError: comments.selection === selection ? comments.error : '',
+    danmakuLoading: !!selection && danmakuEnabled && (comments.selection !== selection || comments.loading),
     reloadSubtitles: () => setRetry(value => value + 1),
     reloadDanmaku: () => { commentCache.current = null; setDanmakuRetry(value => value + 1); },
   };

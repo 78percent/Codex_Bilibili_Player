@@ -50,6 +50,10 @@ async function run() {
   const port = await availablePort();
   const env = { ...process.env };
   delete env.ELECTRON_RUN_AS_NODE; delete env.BILIBILI_DEV_URL;
+  if (packaged) {
+    for (const key of Object.keys(env)) if (/^(?:path|node_path|node_options)$/i.test(key)) delete env[key];
+    env.PATH = `${process.env.SystemRoot}\\System32;${process.env.SystemRoot}`;
+  }
   const child = spawn(executable, [...(packaged ? [] : [root]), `--user-data-dir=${profile}`, `--remote-debugging-port=${port}`], { cwd: root, env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
   let output = '', launchError;
   child.on('error', error => { launchError = error; });
@@ -93,13 +97,15 @@ async function run() {
     const liveResults = [];
     if (live) {
       // Fresh, unauthenticated profile only. Never log QR tokens or API payloads.
-      for (const [operation, arg] of [['hotSearch'], ['searchSuggestions', '哔哩哔哩'], ['searchVideos', { keyword: '哔哩哔哩', page: 1 }], ['qr']]) {
+      for (const [operation, arg] of [['hotSearch'], ['searchSuggestions', '哔哩哔哩'], ['searchVideos', { keyword: '哔哩哔哩', page: 1, order: 'click', duration: 1, tids: 0 }], ['searchUploaders', { keyword: '洛天依' }], ['qr']]) {
         const value = await client.evaluate(`window.bilibili.request(${JSON.stringify(operation)}, ${JSON.stringify(arg) || 'undefined'}).then(result => ({ operation: ${JSON.stringify(operation)}, ok: result.ok, count: result.ok ? (Array.isArray(result.data) ? result.data.length : result.data?.videos?.length) : undefined, error: result.ok ? undefined : result.error, qrHttps: ${JSON.stringify(operation)} === 'qr' && result.ok ? result.data?.url?.startsWith('https://') : undefined }))`);
         liveResults.push(value);
         console.log('Live API:', JSON.stringify(value));
       }
       await client.evaluate("window.bilibili.request('cancelQR')");
       await fs.writeFile(path.join(artifactFolder, `live-${label}.json`), JSON.stringify(liveResults, null, 2));
+      assert.ok(liveResults.every(result => result.ok), 'all live read-only endpoints responded successfully');
+      assert.equal(liveResults.find(result => result.operation === 'qr').qrHttps, true);
     }
     await client.evaluate("document.querySelector('[aria-label=\"搜索B站视频\"]')?.click()");
     await delay(500);

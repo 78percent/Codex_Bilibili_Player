@@ -37,6 +37,7 @@ export function HistoryPlaybackObserver() {
     media.addEventListener('timeupdate',tick); media.addEventListener('pause',flush); media.addEventListener('ended',flush);
     media.addEventListener('bilibili-before-reset',beforeReset);
     return () => { stopped = true; media.removeEventListener('timeupdate',tick); media.removeEventListener('pause',flush); media.removeEventListener('ended',flush); media.removeEventListener('bilibili-before-reset',beforeReset); };
-  }, [uid,video?.bvid,video?.cid,media,record,reportError]);
+  // Re-selecting a part creates a fresh playback session even when its CID is unchanged.
+  }, [uid,video,media,record,reportError]);
   return null;
 }

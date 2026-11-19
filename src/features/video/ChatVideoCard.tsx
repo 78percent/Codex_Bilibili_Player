@@ -8,6 +8,7 @@ import { VideoSurface } from './VideoSurface';
 export function ChatVideoCard() {
   const player = useVideo(), account = useAccount();
   const { state, dispatch } = useApp();
+  const title = player.video ? player.video.parts.length > 1 ? `${player.video.title} · ${player.video.partTitle}` : player.video.title : '哔哩哔哩';
   const width = state.settings.videoCardWidth || 520;
   const setWidth = (value: number) => dispatch({ type: 'SETTINGS', value: { videoCardWidth: value } });
   function resize(event: PointerEvent<HTMLButtonElement>) {
@@ -23,7 +24,7 @@ export function ChatVideoCard() {
     handle.addEventListener('pointermove',move); handle.addEventListener('pointerup',end); handle.addEventListener('pointercancel',end); handle.addEventListener('lostpointercapture',end);
   }
   return <article className="bili-chat-card" style={{ width }} aria-label="聊天中的B站视频">
-    <header><Icon name="Clapperboard" size={16} /><span title={player.video?.title}>{player.video?.title || '哔哩哔哩'}</span><IconButton icon="RefreshCw" label="刷新首页视频" disabled={!account.eligible || player.loading} onClick={() => void player.refresh()} /><IconButton icon="PanelRight" label="在右侧播放" onClick={() => player.move('dock')} /></header>
+    <header><Icon name="Clapperboard" size={16} /><span title={title}>{title}</span><IconButton icon="RefreshCw" label="刷新首页视频" disabled={!account.eligible || player.loading} onClick={() => void player.refresh()} /><IconButton icon="PanelRight" label="在右侧播放" onClick={() => player.move('dock')} /></header>
     <VideoSurface place="chat" />
     <footer><span title={player.video?.bvid}>{player.video ? `${player.video.author} · ${player.video.bvid}` : '视频'}</span><button className="bili-resize" aria-label="拖动调整视频大小" title="拖动调整视频大小" onPointerDown={resize} onKeyDown={e => { if (['ArrowLeft','ArrowRight'].includes(e.key)) { e.preventDefault(); setWidth(Math.max(260,width+(e.key === 'ArrowRight' ? 24 : -24))); } }}><Icon name="Grip" size={16} /></button></footer>
   </article>;

@@ -5,14 +5,16 @@ import { useApp } from '../../state/store';
 import { Icon } from '../../components/ui/Icon';
 import { VideoControls } from './VideoControls';
 import { VideoOverlays } from './VideoOverlays';
+import { usePlayerShortcuts } from './usePlayerShortcuts';
 import '../../styles/player-controls.css';
 export function VideoSurface({ place }: { place: Placement }) {
   const player = useVideo(), account = useAccount(), { dispatch } = useApp();
   const active = player.placement === place;
   const busy = account.checking || player.loading || player.preparing;
-  const stage = useRef<HTMLDivElement>(null), latest = useRef(player); latest.current = player;
+  const surface = useRef<HTMLDivElement>(null), stage = useRef<HTMLDivElement>(null), latest = useRef(player); latest.current = player;
   const [notice, setNotice] = useState(''), noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flash = useCallback((message: string) => { setNotice(message); if (noticeTimer.current) clearTimeout(noticeTimer.current); noticeTimer.current = setTimeout(() => setNotice(''), 900); }, []);
+  const shortcuts = usePlayerShortcuts(surface, active && account.eligible && !!player.video, flash);
   useEffect(() => () => { if (noticeTimer.current) clearTimeout(noticeTimer.current); }, []);
   useEffect(() => {
     if (!active || !stage.current) return;
@@ -36,19 +38,13 @@ export function VideoSurface({ place }: { place: Placement }) {
     else if (!player.video) void player.refresh();
     else void player.toggle();
   }
-  return <div className="bili-player-surface">
+  return <div ref={surface} className="bili-player-surface" {...shortcuts}>
     <div ref={stage} className={`bili-stage ${active ? 'active' : 'inactive'}`} role="button" tabIndex={0} aria-busy={active && busy} aria-label={active ? player.playing ? '暂停视频' : '播放视频' : '在此处播放'}
       onClick={() => { stage.current?.focus({ preventScroll: true }); activate(); }} onKeyDown={event => {
         if (event.target !== event.currentTarget || event.altKey || event.ctrlKey || event.metaKey || event.nativeEvent.isComposing) return;
-        const key = event.key.toLowerCase(); if (![' ', 'enter', 'arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'm', 'd'].includes(key)) return;
+        const key = event.key.toLowerCase(); if (![' ', 'enter'].includes(key)) return;
         event.preventDefault();
-        if (event.repeat && [' ', 'enter', 'm', 'd'].includes(key)) return;
-        if (key === ' ' || key === 'enter') { activate(); return; }
-        if (!active || !account.eligible) return;
-        if (key === 'arrowleft' || key === 'arrowright') { const step = key === 'arrowright' ? 5 : -5; player.seek(player.getMediaElement().currentTime + step); flash(`${step > 0 ? '+' : ''}${step} 秒`); }
-        else if (key === 'arrowup' || key === 'arrowdown') { const volume = Math.max(0, Math.min(1, player.getMediaElement().volume + (key === 'arrowup' ? .05 : -.05))); player.setVolume(volume); flash(`音量 ${Math.round(volume * 100)}%`); }
-        else if (key === 'm') { player.toggleMute(); flash(player.getMediaElement().volume === 0 ? '已静音' : '声音已恢复'); }
-        else if (key === 'd') player.updatePreferences({ danmaku: { ...player.preferences.danmaku, enabled: !player.preferences.danmaku.enabled } });
+        if (!event.repeat) activate();
       }}>
       {active && <div ref={host} className="bili-video-host" />}
       {active && player.video && !player.loading && <VideoOverlays />}

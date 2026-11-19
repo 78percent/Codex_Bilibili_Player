@@ -5,6 +5,7 @@ const { createMedia } = require('./media.cjs');
 const { createSearch } = require('./search.cjs');
 const { createCaptions } = require('./captions.cjs');
 const { createHistory } = require('./history.cjs');
+const { createUploader } = require('./uploader.cjs');
 async function setupBilibili(parent) {
   const accountSession = session.fromPartition('bilibili-account');
   const mediaSession = session.fromPartition('bilibili-media');
@@ -12,11 +13,14 @@ async function setupBilibili(parent) {
   accountSession.setPermissionCheckHandler(() => false);
   const client = createClient(accountSession), media = createMedia(mediaSession);
   const captions = createCaptions(client, mediaSession);
-  let selected = null, revision = 0, queue = [], cursor = -1, feedIndex = 0;
-  function clearSelection() { revision++; selected = null; media.reset(); captions.reset(); return revision; }
+  let selected = null, partSource = null, revision = 0, queue = [], cursor = -1, feedIndex = 0;
+  function clearSelection() { revision++; selected = null; partSource = null; media.reset(); captions.reset(); return revision; }
   function clearQueue() { queue = []; cursor = -1; feedIndex = 0; }
+  let uploader = null, currentAccountUid = '';
   const account = createAccount({ session: accountSession, client, userData: app.getPath('userData'), parent,
     onChange: data => {
+      const uid = data.profile?.uid || '';
+      if (uid !== currentAccountUid) { currentAccountUid = uid; uploader?.close(); }
       if (!data.profile || data.profile.mobileVerified !== true) { clearSelection(); clearQueue(); }
       const win = parent(); if (win && !win.isDestroyed()) win.webContents.send('bilibili:account',data);
     } });
@@ -28,12 +32,36 @@ async function setupBilibili(parent) {
     if (current !== revision) throw new BiliError('选片已取消','CANCELLED');
     if (detail.state < 0) throw new BiliError('此视频目前无法播放');
     if (detail.rights?.pay || detail.rights?.ugc_pay || detail.rights?.ugc_pay_preview) throw new BiliError('此视频是付费内容，当前版本不播放');
-    const part = requestedCid ? detail.pages?.find(page => Number(page.cid) === requestedCid) : detail.pages?.[0];
-    if (requestedCid && !part) throw new BiliError('这条历史记录的分 P 已不可用');
-    const cid = part?.cid || detail.cid;
-    if (!cid) throw new BiliError('此视频缺少分 P 信息');
-    selected = { bvid: detail.bvid, cid, title: detail.title, cover: String(detail.pic || '').replace(/^http:/,'https:'), author: detail.owner?.name || '', duration: part?.duration || detail.duration };
+    const pages = Array.isArray(detail.pages) && detail.pages.length ? detail.pages : [{ cid: detail.cid, page: 1, part: detail.title, duration: detail.duration }];
+    const parts = pages.map((page, index) => ({ cid: Number(page.cid), page: Number(page.page) || index + 1,
+      title: String(page.part || `P${index + 1}`), duration: Math.max(0, Number(page.duration) || 0),
+    })).filter(page => Number.isSafeInteger(page.cid) && page.cid > 0);
+    const part = requestedCid ? parts.find(page => page.cid === requestedCid) : parts[0];
+    if (!part) throw new BiliError(requestedCid ? '此分 P 已不可用' : '此视频缺少分 P 信息');
+    selected = { bvid: detail.bvid, cid: part.cid, title: detail.title, cover: String(detail.pic || '').replace(/^http:/,'https:'),
+      author: detail.owner?.name || '', authorId: String(detail.owner?.mid || ''), duration: part.duration || detail.duration,
+      parts, part: part.page, partTitle: part.title };
     return { ...selected, canPrevious: cursor > 0, canNext: true };
+  }
+  async function selectPart(arg) {
+    const previous = selected || partSource;
+    const cid = Number(arg?.cid);
+    if (!previous || arg?.bvid !== previous.bvid) throw new BiliError('视频已切换，请重新选择分 P', 'CANCELLED');
+    if (!Number.isSafeInteger(cid) || cid <= 0) throw new BiliError('分 P 编号不可用', 'INPUT');
+    const part = previous.parts.find(page => page.cid === cid);
+    if (!part) throw new BiliError('此分 P 已不可用', 'INPUT');
+    const current = clearSelection();
+    partSource = previous;
+    try {
+      await account.requireBound();
+      if (current !== revision) throw new BiliError('选片已取消', 'CANCELLED');
+      selected = { ...previous, cid, duration: part.duration, part: part.page, partTitle: part.title };
+      partSource = null;
+      return { ...selected, canPrevious: cursor > 0, canNext: true };
+    } catch (error) {
+      if (current === revision) { selected = previous; partSource = null; }
+      throw error;
+    }
   }
   async function recommendations(current) {
     const feed = await client.signed('/x/web-interface/wbi/index/top/feed/rcmd', { fresh_type: 4, ps: 12, fresh_idx: ++feedIndex, fresh_idx_1h: feedIndex, feed_version: 'V8', web_location: 1430650 });
@@ -70,9 +98,11 @@ async function setupBilibili(parent) {
     if (current !== revision) throw new BiliError('选片已取消','CANCELLED');
     return data;
   }
+  uploader = createUploader(client, account, { session: accountSession, parent });
   const operations = {
     ...createSearch(client),
     ...createHistory(client, account, () => selected),
+    ...uploader.operations,
     account: () => account.check(),
     qr: () => account.createQR(),
     pollQR: () => account.pollQR(),
@@ -80,6 +110,7 @@ async function setupBilibili(parent) {
     officialLogin: method => account.openOfficial(method),
     security: () => account.openSecurity(),
     logout: async () => { clearSelection(); clearQueue(); await account.clear(); return account.snapshot(); },
+    selectPart,
     selectVideo: async arg => {
       const bvid = typeof arg === 'string' ? arg : arg?.bvid;
       const cid = typeof arg === 'object' && arg?.cid ? Number(arg.cid) : undefined;

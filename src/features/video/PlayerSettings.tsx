@@ -35,7 +35,7 @@ export function PlayerSettings({ anchor, onClose }: { anchor: HTMLButtonElement;
   function updateDM(patch: Partial<DanmakuPreferences>) { player.updatePreferences({ danmaku: { ...dm, ...patch } }); }
   const tracks = player.tracks;
   const subtitleOptions = tracks.length ? [{ value: 'off', label: '关闭' }, { value: 'auto', label: '自动' }, ...tracks.map(track => ({ value: track.language, label: track.label }))] : [{ value: 'off', label: player.subtitleLoading ? '正在加载' : '暂无字幕' }];
-  return createPortal(<div ref={root} className={`bili-settings-panel ${closing ? 'closing' : ''}`} role="dialog" aria-label="播放设置" style={{ ...position, maxHeight: `calc(100vh - ${position.top + 8}px)` }} onKeyDown={event => {
+  return createPortal(<div ref={root} className={`bili-settings-panel ${closing ? 'closing' : ''}`} role="dialog" aria-label="播放设置" data-player-menu style={{ ...position, maxHeight: `calc(100vh - ${position.top + 8}px)` }} onKeyDown={event => {
     if (event.key === 'Escape') { event.stopPropagation(); event.preventDefault(); dismiss(true); }
   }} onBlur={event => { if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget) && event.relatedTarget !== anchor) dismiss(); }}>
     <header>{page !== 'main' && <button type="button" aria-label="返回播放设置" onClick={() => navigate('main')}><Icon name="ChevronLeft" size={16} /></button>}<strong>{page === 'main' ? '播放设置' : page === 'subtitle' ? '字幕样式' : '弹幕设置'}</strong><button type="button" aria-label="关闭设置" onClick={() => dismiss(true)}><Icon name="X" size={16} /></button></header>
@@ -51,7 +51,7 @@ export function PlayerSettings({ anchor, onClose }: { anchor: HTMLButtonElement;
         <Row label="显示弹幕"><Switch label="显示弹幕" checked={dm.enabled} onChange={() => updateDM({ enabled: !dm.enabled })} /></Row>
         <button className="bili-settings-link" onClick={() => navigate('danmaku')}>弹幕设置<Icon name="ChevronRight" size={14} /></button>
         <hr />
-        <details><summary>快捷键</summary><div className="bili-shortcuts"><span>播放 / 暂停<kbd>Space</kbd></span><span>前后跳转 5 秒<kbd>← / →</kbd></span><span>调整音量<kbd>↑ / ↓</kbd></span><span>静音 / 恢复<kbd>M</kbd></span><span>弹幕开关<kbd>D</kbd></span></div></details>
+        <details><summary>快捷键</summary><div className="bili-shortcuts"><span>播放 / 暂停<kbd>Space</kbd></span><span>前后跳转 5 秒<kbd>← / →</kbd></span><span>音量 5%，长按连续调整<kbd>↑ / ↓</kbd></span><span>静音 / 恢复<kbd>M</kbd></span><span>弹幕开关<kbd>D</kbd></span></div></details>
       </>}
       {page === 'subtitle' && <>
         <Row label="字号"><PlayerSelect label="字幕字号" value={String(pref.subtitleSize)} options={[{ value: '1', label: '标准' }, { value: '1.2', label: '大' }, { value: '1.4', label: '更大' }]} onChange={value => player.updatePreferences({ subtitleSize: Number(value) })} /></Row>

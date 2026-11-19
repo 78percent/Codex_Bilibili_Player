@@ -6,16 +6,18 @@ import { PLAYBACK_RATES, usePlayerPreferences, type PlayerPreferences } from './
 import { useVideoExtras } from './useVideoExtras';
 import { readPlayback, usePlaybackMemory, type SavedPlayback } from './playbackMemory';
 export type Placement = 'chat' | 'dock';
-export type VideoInfo = { bvid: string; cid: number; title: string; cover: string; author: string; duration: number; canPrevious: boolean; canNext: boolean };
+export type VideoPart = { cid: number; page: number; title: string; duration: number };
+export type VideoInfo = { bvid: string; cid: number; title: string; cover: string; author: string; authorId: string; duration: number; parts: VideoPart[]; part: number; partTitle: string; canPrevious: boolean; canNext: boolean };
 type Quality = { id: string; quality: number; label: string; codec: string; width: number; height: number };
 type Playback = { manifest: string; qualities: Quality[]; initialQuality: string; duration: number };
 type VideoContextValue = ReturnType<typeof useVideoExtras> & {
   preferences: PlayerPreferences; updatePreferences: (patch: Partial<PlayerPreferences>) => void;
   next: () => Promise<void>; previous: () => Promise<void>; retryPlayback: () => void; toggleMute: () => void; setRate: (rate: number) => void; getMediaElement: () => HTMLVideoElement;
-  video: VideoInfo | null; loading: boolean; preparing: boolean; error: string; playing: boolean; time: number; duration: number; volume: number;
+  video: VideoInfo | null; loading: boolean; preparing: boolean; error: string; playing: boolean; time: number; duration: number; volume: number; pendingPart: number | null;
   qualities: Quality[]; quality: string; placement: Placement; ownerThread: string | null;
   refresh: () => Promise<void>; toggle: () => Promise<void>; seek: (time: number) => void; setVolume: (value: number) => void;
   playSearchVideo: (bvid: string, resume?: { cid?: number; time?: number }) => Promise<void>;
+  selectPart: (cid: number) => Promise<void>;
   setQuality: (id: string) => void; move: (to: Placement) => void; register: (place: Placement, host: HTMLElement | null) => void;
 };
 const Context = createContext<VideoContextValue>(null!);
@@ -25,13 +27,14 @@ export function VideoProvider({ children }: { children: ReactNode }) {
   const { preferences, updatePreferences } = usePlayerPreferences();
   const preferenceRef = useRef(preferences); preferenceRef.current = preferences;
   const lastAudible = useRef(preferences.volume || .8);
-  const selectionRequest = useRef<{ operation: string; bvid?: string; resume?: { cid?: number; time?: number }; restore?: SavedPlayback }>({ operation: 'firstVideo' });
+  const selectionRequest = useRef<{ operation: string; bvid?: string; cid?: number; resume?: { cid?: number; time?: number }; restore?: SavedPlayback }>({ operation: 'firstVideo' });
   const resumeTime = useRef(0);
   const selectionFailed = useRef(false);
   const [video,setVideo] = useState<VideoInfo | null>(null), [loading,setLoading] = useState(false), [preparing,setPreparing] = useState(false), [error,setError] = useState('');
   const [playing,setPlaying] = useState(false), [time,setTime] = useState(0), [duration,setDuration] = useState(0), [volume,updateVolume] = useState(preferences.volume);
   const [qualities,setQualities] = useState<Quality[]>([]), [quality,updateQuality] = useState(''), [placement,setPlacement] = useState<Placement>('chat');
   const [ownerThread,setOwnerThread] = useState<string | null>(null);
+  const [pendingPart,setPendingPart] = useState<number | null>(null);
   const element = useRef<HTMLVideoElement | null>(null), engine = useRef<any>(null), hosts = useRef<Partial<Record<Placement,HTMLElement>>>({});
   const preferred = useRef<Placement>('chat'), requestId = useRef(0), preparingRef = useRef(false), selected = useRef<VideoInfo | null>(null);
   const lastUser = useRef<string | null>(null), playbackReady = useRef(false);
@@ -50,7 +53,7 @@ export function VideoProvider({ children }: { children: ReactNode }) {
     resumeTime.current = 0;
     el.pause(); engine.current?.reset(); engine.current = null;
     el.removeAttribute('src'); el.load(); el.removeAttribute('poster');
-    setPreparing(false); setPlaying(false); setTime(0); setQualities([]); updateQuality('');
+    setPreparing(false); setPlaying(false); setTime(0); setQualities([]); updateQuality(''); setPendingPart(null);
   },[]);
   const attach = useCallback(() => {
     const el = element.current!, host = hosts.current[preferred.current];
@@ -130,6 +133,7 @@ export function VideoProvider({ children }: { children: ReactNode }) {
   async function toggle() {
     const el = element.current!;
     if (!eligible.current || !selected.current || preparingRef.current) return;
+    if (selectionFailed.current && selectionRequest.current.operation === 'selectPart') { retryPlayback(); return; }
     selectionFailed.current = false;
     if (playbackReady.current && engine.current) {
       if (!el.paused) { playIntent.current = false; el.pause(); } else { playIntent.current = true; try { await el.play(); setError(''); } catch { setError('无法开始播放，请重试'); } } return;
@@ -196,6 +200,29 @@ export function VideoProvider({ children }: { children: ReactNode }) {
       if (id === requestId.current) setLoading(false);
     }
   };
+  const selectPart = async (cid: number) => {
+    const currentVideo = selected.current;
+    if (!eligible.current || !currentVideo || !currentVideo.parts.some(part => part.cid === cid)) return;
+    // Keep the current video's list available while another part is loading or failed.
+    selectionRequest.current = { operation: 'selectPart', bvid: currentVideo.bvid, cid };
+    selectionFailed.current = false;
+    reset(); const id = requestId.current;
+    setPendingPart(cid); setLoading(true); setError('');
+    try {
+      const info = await biliRequest<VideoInfo>('selectPart', { bvid: currentVideo.bvid, cid });
+      if (id !== requestId.current || !eligible.current) return;
+      selected.current = info; setVideo(info); setDuration(info.duration); element.current!.poster = info.cover;
+      setPendingPart(null); setLoading(false);
+      // A deliberate part selection starts from zero, without moving the shared player.
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      if (id !== requestId.current || !eligible.current) return;
+      attach(); void toggle();
+    } catch (e) {
+      if (id === requestId.current) { selectionFailed.current = true; setError((e as Error).message); }
+    } finally {
+      if (id === requestId.current) { setPendingPart(null); setLoading(false); }
+    }
+  };
   const move = (to: Placement) => {
     movingPlayback.current = !element.current!.paused;
     preferred.current = to; setPlacement(to);
@@ -217,14 +244,15 @@ export function VideoProvider({ children }: { children: ReactNode }) {
   const retryPlayback = () => {
     if (selected.current && !selectionFailed.current) { void toggle(); return; }
     const request = selectionRequest.current;
-    if (request.restore) void loadSelection(request.operation, false, request.restore);
+    if (request.operation === 'selectPart' && request.cid) void selectPart(request.cid);
+    else if (request.restore) void loadSelection(request.operation, false, request.restore);
     else if (request.operation === 'selectVideo' && request.bvid) void playSearchVideo(request.bvid,request.resume).catch(() => {});
     else void loadSelection(request.operation, true);
   };
-  return <Context.Provider value={{ video, loading, preparing, error, playing, time, duration, volume, qualities, quality, placement, ownerThread,
+  return <Context.Provider value={{ video, loading, preparing, error, playing, time, duration, volume, qualities, quality, placement, ownerThread, pendingPart,
     ...extras, preferences, updatePreferences, setRate, toggleMute: () => setVolume(element.current!.volume === 0 ? lastAudible.current : 0),
     next: () => loadSelection('nextVideo', true), previous: () => loadSelection('previousVideo', true), retryPlayback,
     getMediaElement: () => element.current!,
-    refresh, toggle, playSearchVideo, seek: value => { if (playbackReady.current) { const target = Math.max(0,Math.min(value,duration)); element.current!.currentTime = target; setTime(target); } },
+    refresh, toggle, playSearchVideo, selectPart, seek: value => { if (playbackReady.current) { const target = Math.max(0,Math.min(value,duration)); element.current!.currentTime = target; setTime(target); } },
     setVolume, setQuality, move, register }}>{children}</Context.Provider>;
 }

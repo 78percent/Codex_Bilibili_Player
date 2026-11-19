@@ -16,6 +16,23 @@ function duration(value) {
   if (typeof value === 'number') return Math.max(0, value);
   return String(value || '0').split(':').reduce((total, part) => total * 60 + (Number(part) || 0), 0);
 }
+function optionalCount(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const result = Number(value);
+  return Number.isFinite(result) && result >= 0 ? result : null;
+}
+function userId(value) {
+  if (typeof value === 'number' && !Number.isSafeInteger(value)) return '';
+  const result = String(value ?? '');
+  return /^[1-9]\d{0,23}$/.test(result) ? result : '';
+}
+function searchOptions(arg) {
+  const order = arg?.order ?? 'totalrank', selectedDuration = Number(arg?.duration ?? 0), tids = Number(arg?.tids ?? 0);
+  if (!['totalrank', 'click', 'pubdate', 'dm', 'stow'].includes(order)) throw new BiliError('搜索排序不可用', 'INPUT');
+  if (!Number.isInteger(selectedDuration) || selectedDuration < 0 || selectedDuration > 4) throw new BiliError('时长筛选不可用', 'INPUT');
+  if (!Number.isSafeInteger(tids) || tids < 0) throw new BiliError('分区筛选不可用', 'INPUT');
+  return { order, duration: selectedDuration, tids };
+}
 function createSearch(client) {
   return {
     hotSearch: async () => {
@@ -37,18 +54,40 @@ function createSearch(client) {
       return [...new Set(data.tag.map(item => plainText(item.value || item.name)).filter(Boolean))].slice(0, count);
     },
     searchVideos: async arg => {
-      const term = keyword(arg?.keyword), page = Number(arg?.page || 1);
+      const term = keyword(arg?.keyword), page = Number(arg?.page ?? 1), options = searchOptions(arg);
       if (!Number.isInteger(page) || page < 1 || page > 1000) throw new BiliError('搜索页码不可用', 'INPUT');
       const data = await client.signed('/x/web-interface/wbi/search/type', {
-        search_type: 'video', keyword: term, page, page_size: 20, order: 'totalrank',
+        search_type: 'video', keyword: term, page, page_size: 20, ...options,
       }, true);
       if (!data || !Array.isArray(data.result) && Number(data.numResults) !== 0) throw new BiliError('B站未返回有效的搜索结果');
-      const videos = (data.result || []).filter(item => item.bvid && !item.is_ad && !item.ad_info).map(item => ({
+      const videos = (Array.isArray(data.result) ? data.result : []).filter(item => item?.bvid && !item.is_ad && !item.ad_info).map(item => ({
         bvid: item.bvid, title: plainText(item.title), author: plainText(item.author),
+        authorId: userId(item.mid),
         cover: String(item.pic || '').replace(/^\/\//, 'https://').replace(/^http:/, 'https:'),
         duration: duration(item.duration), views: Number(item.play) || 0, publishedAt: Number(item.pubdate) || 0,
+        danmaku: optionalCount(item.video_review) ?? undefined, favorites: optionalCount(item.favorites) ?? undefined,
+        partition: plainText(item.typename) || undefined,
       }));
-      return { keyword: term, page, pages: Math.max(1, Math.min(1000, Number(data.numPages) || 1)), total: Number(data.numResults) || 0, videos };
+      return { keyword: term, page, ...options, pages: Math.max(1, Math.min(1000, Number(data.numPages) || 1)), total: Number(data.numResults) || 0, videos };
+    },
+    searchUploaders: async arg => {
+      const term = keyword(arg?.keyword);
+      const data = await client.signed('/x/web-interface/wbi/search/all/v2', { keyword: term }, true);
+      if (!Array.isArray(data?.result)) throw new BiliError('B站未返回有效的相关UP主结果');
+      const uploaders = [], seen = new Set();
+      for (const module of data.result) {
+        if (module?.result_type !== 'bili_user') continue;
+        if (!Array.isArray(module.data)) throw new BiliError('B站未返回有效的相关UP主结果');
+        for (const item of module.data) {
+          const mid = userId(item?.mid), name = plainText(item?.uname);
+          if (!mid || !name || seen.has(mid)) continue;
+          seen.add(mid);
+          uploaders.push({ mid, name, avatar: String(item.upic || '').replace(/^\/\//, 'https://').replace(/^http:/, 'https:'),
+            sign: plainText(item.usign), followers: optionalCount(item.fans), videoCount: optionalCount(item.videos) });
+          if (uploaders.length === 2) return uploaders;
+        }
+      }
+      return uploaders;
     },
   };
 }

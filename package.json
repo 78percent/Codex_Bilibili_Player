@@ -1,9 +1,15 @@
 {
   "name": "codex-bilibili-player",
-  "version": "1.3.3",
+  "version": "1.4.0",
   "private": true,
   "type": "module",
-  "description": "An independent local Codex-style development workspace for a future Bilibili player",
+  "description": "An independent Bilibili desktop player with a chat-style workspace",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/78percent/Codex_Bilibili_Player.git"
+  },
+  "engines": { "node": ">=24 <25" },
   "author": "Codex Bilibili Player",
   "main": "electron/main.cjs",
   "scripts": {
@@ -30,6 +36,9 @@
     "typescript": "^5.7.0",
     "vite": "^6.1.0"
   },
+  "overrides": {
+    "minimatch@>=7.0.0 <11.0.1": "11.0.9"
+  },
   "build": {
     "appId": "local.codex.bilibili.player",
     "productName": "Codex Bilibili Player",
@@ -41,6 +50,11 @@
       "dist/**/*",
       "electron/**/*",
       "package.json"
+    ],
+    "extraResources": [
+      { "from": "LICENSE", "to": "LICENSE.txt" },
+      { "from": "THIRD_PARTY_NOTICES.md", "to": "THIRD_PARTY_NOTICES.md" },
+      { "from": "licenses", "to": "licenses", "filter": ["**/*"] }
     ],
     "win": {
       "target": [

@@ -22,3 +22,31 @@ Cookies
 Cookies-journal
 Local Storage/
 Session Storage/
+
+# Local development history and reference material are not public documentation.
+.local/
+work/
+/AGENTS.md
+/openspec/
+/docs/*
+!/docs/compatibility.md
+!/docs/privacy.md
+!/docs/architecture.md
+!/docs/sources.md
+!/docs/release-review.md
+!/docs/releases/
+/docs/releases/*
+!/docs/releases/1.3.0.md
+!/docs/releases/1.3.3.md
+!/docs/releases/1.4.0.md
+
+# Signing material, crash dumps, captured sessions and release staging.
+*.pfx
+*.p12
+*.dmp
+*.har
+*.heapsnapshot
+*.asar
+*.asar.unpacked/
+*.zip
+*.7z

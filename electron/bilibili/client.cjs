@@ -11,7 +11,7 @@ function createClient(session) {
   function assertCurrent(current) {
     if (resetting || current !== generation) throw new BiliError('登录操作已取消', 'CANCELLED');
   }
-  async function request(host, pathname, params = {}, signal, payloadKey = 'data', acceptedCodes = [], form) {
+  async function request(host, pathname, params = {}, signal, payloadKey = 'data', acceptedCodes = [], form, jsonBody) {
     if (resetting) throw new BiliError('登录操作已取消', 'CANCELLED');
     const url = new URL(pathname, `https://${host}`);
     for (const [key, value] of Object.entries(params)) url.searchParams.set(key, String(value));
@@ -22,7 +22,11 @@ function createClient(session) {
     try {
       let response;
       try {
-        response = await session.fetch(url.href, { credentials: 'include', method: form ? 'POST' : 'GET', body: form ? new URLSearchParams(form).toString() : undefined, headers: { Referer: 'https://www.bilibili.com/', ...(form ? { 'Content-Type': 'application/x-www-form-urlencoded' } : {}) }, signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000), ...(signal ? [signal] : [])]) });
+        const json = jsonBody !== undefined;
+        response = await session.fetch(url.href, { credentials: 'include', method: json || form ? 'POST' : 'GET',
+          body: json ? JSON.stringify(jsonBody) : form ? new URLSearchParams(form).toString() : undefined,
+          headers: { Referer: 'https://www.bilibili.com/', ...(json ? { 'Content-Type': 'application/json' } : form ? { 'Content-Type': 'application/x-www-form-urlencoded' } : {}) },
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000), ...(signal ? [signal] : [])]) });
       } catch {
         if (controller.signal.aborted || signal?.aborted) throw new BiliError('登录操作已取消', 'CANCELLED');
         throw new BiliError('无法连接 B 站，请检查网络后重试');
@@ -59,11 +63,16 @@ function createClient(session) {
     signedParams.w_rid = createHash('md5').update(query + wbi).digest('hex');
     return request('api.bilibili.com', pathname, signedParams);
   }
-  async function post(pathname, values) {
+  async function post(pathname, values, options = {}) {
     const current = generation;
-    const cookies = await session.cookies.get({ url: 'https://www.bilibili.com/', name: 'bili_jct' });
+    const [cookies, users] = await Promise.all([
+      session.cookies.get({ url: 'https://www.bilibili.com/', name: 'bili_jct' }),
+      options.expectedUid ? session.cookies.get({ url: 'https://www.bilibili.com/', name: 'DedeUserID' }) : Promise.resolve([]),
+    ]);
     assertCurrent(current);
+    if (options.expectedUid && users[0]?.value !== String(options.expectedUid)) throw new BiliError('账号已切换，请重新操作', 'CANCELLED');
     if (!cookies[0]?.value) throw new BiliError('登录已过期，请重新登录', 'EXPIRED');
+    if (options.json) return request('api.bilibili.com', pathname, { csrf: cookies[0].value }, undefined, 'data', [], undefined, values);
     return request('api.bilibili.com', pathname, {}, undefined, 'data', [], { ...values, csrf: cookies[0].value });
   }
   return { request, nav, signed, post, reset: async () => {

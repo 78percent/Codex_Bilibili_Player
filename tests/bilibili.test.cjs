@@ -144,3 +144,29 @@ test('encryption failure preserves the authenticated profile and reports persist
   assert.equal(snapshot.profile.uid, '2');
   assert.match(snapshot.persistenceError, /未保存/);
 });
+
+test('account identity changes close official uploader windows without exposing cleanup over IPC', async () => {
+  let changed, handler, closed = 0;
+  const partition = { setPermissionRequestHandler() {}, setPermissionCheckHandler() {} };
+  const { setupBilibili } = await loadWithStubs('../electron/bilibili/index.cjs', {
+    electron: { app: { getPath: () => 'unused', on() {} }, session: { fromPartition: () => partition }, ipcMain: { handle: (_, fn) => { handler = fn; } } },
+    './client.cjs': { createClient: () => ({}), BiliError: Error },
+    './account.cjs': { createAccount: options => { changed = options.onChange; return { restore: async () => {}, snapshot: () => ({}) }; } },
+    './media.cjs': { createMedia: () => ({ start: async () => {}, reset() {}, close() {} }) },
+    './captions.cjs': { createCaptions: () => ({ reset() {} }) },
+    './search.cjs': { createSearch: () => ({}) },
+    './history.cjs': { createHistory: () => ({}) },
+    './uploader.cjs': { createUploader: () => ({ operations: {}, close: () => { closed++; } }) },
+  });
+  const win = { isDestroyed: () => false, webContents: { send() {}, mainFrame: {} } };
+  await setupBilibili(() => win);
+  changed({ profile: { uid: '1', mobileVerified: true } });
+  const initial = closed;
+  changed({ profile: { uid: '1', mobileVerified: true } });
+  assert.equal(closed, initial);
+  changed({ profile: { uid: '2', mobileVerified: true } });
+  assert.equal(closed, initial + 1);
+  changed({ profile: null });
+  assert.equal(closed, initial + 2);
+  assert.equal((await handler({ sender: win.webContents, senderFrame: win.webContents.mainFrame }, 'close')).error.code, 'FORBIDDEN');
+});
